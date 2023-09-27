@@ -12,4 +12,6 @@ sh run.sh
 
 ``` console
 ff -> f
+g -> fg
+exit
 ```
