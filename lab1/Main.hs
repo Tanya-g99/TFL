@@ -48,13 +48,13 @@ delChars chars expr = case dropWhile (contains chars) expr of
                         where (w, expr'') = break (contains chars) expr'
                             
 split :: String -> [[String]]
-split input = map (delChars " ->") (delChars ";" input)
+split input = map (delChars " ->") (delChars "\n" input)
 
 getFuncs :: [[String]] -> String
 getFuncs arr = let 
                     getFuncs' "" res = res
                     getFuncs' arr res = 
-                        if elem (arr !! 0) res 
+                        if elem (head arr) res 
                         then getFuncs' (tail arr) res
                         else getFuncs' (tail arr) $ (arr !! 0) : res
     in getFuncs' (foldr (++) "" [ f | i <- arr, f <- i]) ""
