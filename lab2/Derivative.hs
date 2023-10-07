@@ -1,21 +1,8 @@
 module Main where
 import Text.Printf
+import Normalization
 
-data Node = Node { oper :: Char, l :: Maybe Node, r :: Maybe Node }
-
-priority :: Char -> Int
-priority '*' = 4
-priority '·' = 3
-priority '#' = 2
-priority '|' = 1
-priority _ = -1
-
-leftAssoc :: Char -> Bool
-leftAssoc '*' = False
-leftAssoc _ = True
-
-isOp :: Char -> Bool
-isOp token = token `elem` "*·#|"
+data Node = Node { oper :: Char, l :: Maybe Node, r :: Maybe Node } 
 
 insertDot :: String -> String
 insertDot [] = "ϵ"
@@ -34,36 +21,6 @@ insertDot regex = let
                             (tail regex)
     in ((head regex) : (reverse (insertDot' "" (head regex) (tail regex))))
 
-toPostfix :: String -> String
-toPostfix regex = lastStep
-  where
-    lastStep = 
-        (\(output, stack, _) -> reverse((reverse stack) <> output))
-        $ last toPostfix'
-    toPostfix' = scanl parse ("", "", ' ') regex
-    parse (output, stack, _) token
-        | isOp token =
-            (reverse (takeWhile testOp stack) <> output,
-            (token :) (dropWhile testOp stack),
-            token)
-        | token == '(' = 
-            (output, 
-            '(' : stack, 
-            token)
-        | token == ')' =
-            (reverse (takeWhile (/= '(') stack) <> output,
-            tail $ dropWhile (/= '(') stack,
-            token)
-        | otherwise = 
-            (token : output, 
-            stack, 
-            token)
-        where
-            testOp x =
-                isOp x
-                && (leftAssoc token 
-                    && priority token == priority x
-                    || priority token < priority x)
 
 postfixToTree :: String -> Maybe Node
 postfixToTree postfix = postfixToTree' postfix []
