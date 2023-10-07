@@ -84,8 +84,8 @@ simp Zero = Zero
 simp Eps = Eps
 simp (Let c) = Let c
 simp (Union rs) = union' $ flat_uni $ map simp rs
-simp (Shuf rs) = union' $ flat_shuf $ map simp rs
-simp (Cat rs) = union'' $ flat_cat $ map simp rs
+simp (Shuf rs) = union'' $ flat_shuf $ map simp rs
+simp (Cat rs) = union' $ flat_cat $ map simp rs
 simp (Star r) = star $ simp r
 
 norm :: Ord a => [a] -> [a]
