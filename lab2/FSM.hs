@@ -3,7 +3,7 @@ module FSM where
 import Normalization
 
 -- FSM = (states, start, finals, LTS)  
-type FSM a = ([a], a, [a], [[a]])
+type FSM a = ([a], a, [a], [(Int, Int, Char)])
 
 type Transition = (Int, Int, Char) 
 type MaybeTransition = (Maybe Int, Maybe Int, Char)
@@ -65,9 +65,6 @@ getTransitionsStates states transitions regexs alphabet =
     removeFoundStates (length states) [] states transitions (getTransitions states regexs alphabet)
 
 -- По регулярке строит массив переходов transitions и массив состояний states
--- По переходам надо построить систему переходов LTS 
--- Из состояний нужно выделить стартовое(находится под индексом 0) 
--- и финальные  [state | state <- states, nullable state]
 getAllTransitionsStates :: String -> ([Transition], [RegExp])
 getAllTransitionsStates regex = let
     alphabet = getAlphabet regex
@@ -93,22 +90,33 @@ regExpToString re =
             Star r:rs -> (parse (r:rs) xs) ++ "*"
             Let x:rs -> parse rs (x:xs)
 
-finalStates :: [RegExp] -> [RegExp]
-finalStates states = [state | state <- states, nullable state]
-
-startState :: [RegExp] -> RegExp
-startState (start:re) = start
-
-makeLTS :: Int -> [Transition] -> [[RegExp]] -- Дописать (сортировка пеерходов? и заполнение матрицы)
-makeLTS countStates transitions = [[]]
-
-makeFSM :: String -> FSM RegExp
-makeFSM regex = let
+-- По регулярке строит автомат, где состояния представлены в виде RegExp
+makeRegExpFSM :: String -> FSM RegExp
+makeRegExpFSM regex = let
+    startState (start:re) = start
+    finalStates states = [state | state <- states, nullable state]
     (transitions, states) = getAllTransitionsStates regex
     start = startState states
     finals = finalStates states
-    lts = makeLTS (length states) transitions
+    lts = transitions
     in (states, start, finals, lts)
+
+-- По регулярке строит автомат, где состояния представлены в виде индексов
+makeIntFSM :: String -> FSM Int
+makeIntFSM regex = let
+    finalStates states = let
+        finalStates' [] res index = (res, (index - 1))
+        finalStates' (state:states) res index = 
+            if nullable state 
+                then finalStates' states (index:res) (index + 1)
+                else finalStates' states res (index + 1)
+        in finalStates' states [] 0
+    (transitions, states) = getAllTransitionsStates regex
+    start = 0
+    (finals, statesLen) = finalStates states
+    lts = transitions
+    in ([0..statesLen], start, finals, lts)
+
 
 test :: ([Transition], [String])
 test = let
