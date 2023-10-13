@@ -2,8 +2,8 @@ module FSM where
 
 import Normalization
 
--- FSM = (states, start, finals, LTS)  
-type FSM a = ([a], a, [a], [(Int, Int, Char)])
+-- FSM = (states, start, finals, LTS, alphabet)  
+type FSM a = ([a], a, [a], [(Int, Int, Char)], String)
 
 type Transition = (Int, Int, Char) 
 type MaybeTransition = (Maybe Int, Maybe Int, Char)
@@ -65,11 +65,11 @@ getTransitionsStates states transitions regexs alphabet =
     removeFoundStates (length states) [] states transitions (getTransitions states regexs alphabet)
 
 -- По регулярке строит массив переходов transitions и массив состояний states
-getAllTransitionsStates :: String -> ([Transition], [RegExp])
+getAllTransitionsStates :: String -> ([Transition], [RegExp], String)
 getAllTransitionsStates regex = let
     alphabet = getAlphabet regex
     re = regexToRegExp regex 
-    getAllTransitionsStates' states transitions [] alphabet = (transitions, states)
+    getAllTransitionsStates' states transitions [] alphabet = (transitions, states, alphabet)
     getAllTransitionsStates' states transitions regexs alphabet = let
         (newRegexs, newStates, newTransitions) = 
             getTransitionsStates states transitions regexs alphabet
@@ -95,11 +95,11 @@ makeRegExpFSM :: String -> FSM RegExp
 makeRegExpFSM regex = let
     startState (start:re) = start
     finalStates states = [state | state <- states, nullable state]
-    (transitions, states) = getAllTransitionsStates regex
+    (transitions, states, alphabet) = getAllTransitionsStates regex
     start = startState states
     finals = finalStates states
     lts = transitions
-    in (states, start, finals, lts)
+    in (states, start, finals, lts, alphabet)
 
 -- По регулярке строит автомат, где состояния представлены в виде индексов
 makeIntFSM :: String -> FSM Int
@@ -111,16 +111,16 @@ makeIntFSM regex = let
                 then finalStates' states (index:res) (index + 1)
                 else finalStates' states res (index + 1)
         in finalStates' states [] 0
-    (transitions, states) = getAllTransitionsStates regex
+    (transitions, states, alphabet) = getAllTransitionsStates regex
     start = 0
     (finals, statesLen) = finalStates states
     lts = transitions
-    in ([0..statesLen], start, finals, lts)
+    in ([0..statesLen], start, finals, lts, alphabet)
 
 
-test :: ([Transition], [String])
+test :: ([Transition], [String], String)
 test = let
-            (t, s) = getAllTransitionsStates "(a|b)*a(a|b)"
+            (t, s, alphabet) = getAllTransitionsStates "(a|b)*a(a|b)"
             nS = map (regExpToString) s
-    in (t, nS)
+    in (t, nS, alphabet)
 
