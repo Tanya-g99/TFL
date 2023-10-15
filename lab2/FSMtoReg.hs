@@ -35,7 +35,7 @@ toLTS (qs,s,fs,transition,alphabet) = (lIJ, lI') where
    
   lIJ = [[simp (coef i j) | j <- qs] | i <- qs]
   coef i j = Union [Let a | a <- alphabet, (lookupMy i j a transition)] where
-    lookupMy :: Int -> Int -> Char -> [(Int, Int, Char)] -> Bool
+    lookupMy :: Int -> Int -> Char -> [Transition] -> Bool
     lookupMy _ _ _ [] = False
     lookupMy f s ch (c:cs) | ((f, s, ch) == c) = True
                            | otherwise = lookupMy f s ch cs    

@@ -2,8 +2,8 @@ module FSM where
 
 import Normalization
 
--- FSM = (states, start, finals, LTS, alphabet)  
-type FSM a = ([a], a, [a], [(Int, Int, Char)], String)
+-- FSM = (states, start, finals, transitions, alphabet)  
+type FSM a = ([a], a, [a], [Transition], String)
 
 type Transition = (Int, Int, Char) 
 type MaybeTransition = (Maybe Int, Maybe Int, Char)
