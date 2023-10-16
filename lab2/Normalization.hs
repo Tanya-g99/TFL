@@ -134,26 +134,26 @@ flat_shuf rs = fc [] rs where
   fc pr [] = [shuf $ reverse pr]
   fc pr (Zero:rs) = []
   fc pr (Eps:rs) = fc pr rs
-  fc pr (Shuf rs':rs) = fc (reverse rs' ++ pr) rs
-  fc pr (Cat rs':rs) = concat $ map (fc pr . (:rs)) rs'
+  fc pr (Shuf rs':rs) = rs' ++ flat_shuf rs
   fc pr (Union rs':rs) = concat $ map (fc pr . (:rs)) rs'
   fc pr (r:rs) = fc (r:pr) rs
  
   
 flat_cat :: [RegExp] -> [RegExp]
 flat_cat rs = fc [] rs where
--- fc (аргументы уже обработаны) (аргументы будут обрабатываться)
   fc :: [RegExp] -> [RegExp] -> [RegExp]
   fc pr [] = [cat $ reverse pr]
   fc pr (Zero:rs) = []
   fc pr (Eps:rs) = fc pr rs
   fc pr (Cat rs':rs) = fc (reverse rs' ++ pr) rs
   fc pr (Union rs':rs) = concat $ map (fc pr . (:rs)) rs'
-  fc pr (Shuf rs':rs) = concat $ map (fc pr . (:rs)) rs'
   fc pr (r:rs) = fc (r:pr) rs
 
 getNorm :: Char -> String -> RegExp
 getNorm a regex = simp $ deriv a $ toRegExp $ toPostfix $ insertDot regex
+
+-- regex = "ab#cd"
+-- test =     simp $ deriv 'a' $ toRegExp $ toPostfix $ insertDot regex
 
  
 nullable :: RegExp -> Bool
@@ -183,4 +183,3 @@ deriv a (Union rs) = Union (map (\r -> deriv a r) rs)
 deriv a (Cat rs) = Union (dCat a rs)
 deriv a (Shuf rs) = Union(dShuf a rs)
 deriv a (Star r) = Cat[deriv a r, (Star r)]
- 
