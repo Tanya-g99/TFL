@@ -187,3 +187,13 @@ generate20Strings regex = let
     (lts, _) = toLTS (states, start, finals, transitions, alphabet)
     in [mutateString ((mkStdGen (-i)), (generateString (mkStdGen i) (makeAdjacencyMatrix (length states) transitions) lts finals )) 
         | i <- [1..20]]
+
+checkWordMatchRegex :: String -> String -> Bool
+checkWordMatchRegex regex string = let
+    match' regex "" = nullable regex
+    match' regex (char:string) = let
+        deriv =  (getNormDerivative char regex)
+        in if deriv == Zero 
+            then False
+            else match' deriv string
+    in match' (regexToRegExp regex) string
