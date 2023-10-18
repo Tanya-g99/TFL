@@ -13,18 +13,14 @@ data Path = Path {
     string :: String
 }
 
-makeAdjacencyMatrix :: Int -> [Transition] -> Matrix
-makeAdjacencyMatrix statesSize transitions = let 
-    coef i j = (lookupMy i j transitions) where
-        lookupMy :: Int -> Int -> [Transition] -> Int
-        lookupMy _ _ [] = 0
-        lookupMy i j ((q1, q2, _):transitions) 
-            | (i == q1 && j == q2) = 1
-            | otherwise = lookupMy i j transitions 
-    in ([[coef j i 
-        | i <- [0..(statesSize-1)]] 
-        | j <- [0..(statesSize-1)]]
-    , statesSize, statesSize)
+makeAdjacencyMatrix :: [[RegExp]] -> Matrix
+makeAdjacencyMatrix lts = let
+    regExprToInt r = 
+        if r == Zero
+            then 0
+            else 1
+    size = length lts
+    in (map (map regExprToInt) lts,  size, size)
 
 makeReachabilityMatrix :: Matrix -> Matrix
 makeReachabilityMatrix (adjacencyMatrix, adjacencySize, _) = let
@@ -69,8 +65,9 @@ generateChar g regExp =
             in regExpToString (chars !! i)
         _ -> regExpToString regExp
 
-generateString :: RandomGen g => g -> Matrix -> [[RegExp]] -> [Int] -> String
-generateString gen (adjacency, statesCount, _) lts finals = let
+generateString :: RandomGen g => g -> [[RegExp]] -> [Int] -> String
+generateString gen lts finals = let
+    (adjacency, statesCount, _) = makeAdjacencyMatrix lts
     stateSeq = generateStateSeq gen adjacency finals
     getNextPositions visited (Path state string) = 
         [(Path nextState (string ++ (generateChar gen (lts !! state !! nextState))))
@@ -185,7 +182,7 @@ generate20Strings :: String -> [String]
 generate20Strings regex = let
     (states, start, finals, transitions, alphabet) = makeIntFSM regex
     (lts, _) = toLTS (states, start, finals, transitions, alphabet)
-    in [mutateString ((mkStdGen (-i)), (generateString (mkStdGen i) (makeAdjacencyMatrix (length states) transitions) lts finals )) 
+    in [mutateString ((mkStdGen (-i)), (generateString (mkStdGen i) lts finals )) 
         | i <- [1..20]]
 
 checkWordMatchRegex :: String -> String -> Bool
