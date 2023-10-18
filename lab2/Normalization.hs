@@ -48,13 +48,21 @@ leftAssoc _ = True
 isOp :: Char -> Bool
 isOp token = token `elem` "*·#|"
 
+removeStar :: String -> String
+removeStar lst = let
+    removeStar' [op] res = reverse (op:res)
+    removeStar' (op1:op2:lst) res
+      | op1 == '*' && op2 == '*' = removeStar' (op2:lst) res
+      | otherwise = removeStar' (op2:lst) (op1:res)
+  in removeStar' lst ""
+
 toPostfix :: String -> String
 toPostfix regex = lastStep
   where
     lastStep = 
         (\(output, stack, _) -> reverse((reverse stack) <> output))
         $ last toPostfix'
-    toPostfix' = scanl parse ("", "", ' ') regex
+    toPostfix' = scanl parse ("", "", ' ') (removeStar regex)
     parse (output, stack, _) token
         | isOp token =
             (reverse (takeWhile testOp stack) <> output,
