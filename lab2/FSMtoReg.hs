@@ -43,13 +43,6 @@ toLTS (qs,s,fs,transition,alphabet) = (lIJ, lI') where
   lI' = [ check qi | qi <- qs] where
     check q = if elem q fs then Eps else Zero
 
-
-convFSMtoStr :: FSM Int -> String
-convFSMtoStr m@(qs,s,fs,trans,alf) = regExpToString $ simp $ solution !! s where
-  (matrix, consts) = toLTS m
-  solution = solve matrix consts
-
-
-t = convFSMtoStr $ makeIntFSM "(c|a)*"
+ 
 
 
