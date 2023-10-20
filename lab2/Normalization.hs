@@ -57,12 +57,12 @@ removeStar lst = let
   in removeStar' lst ""
 
 toPostfix :: String -> String
-toPostfix regex = lastStep
+toPostfix regex = removeStar lastStep
   where
     lastStep = 
         (\(output, stack, _) -> reverse((reverse stack) <> output))
         $ last toPostfix'
-    toPostfix' = scanl parse ("", "", ' ') (removeStar regex)
+    toPostfix' = scanl parse ("", "", ' ') regex
     parse (output, stack, _) token
         | isOp token =
             (reverse (takeWhile testOp stack) <> output,
