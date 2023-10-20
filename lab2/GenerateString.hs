@@ -168,7 +168,7 @@ mutateString :: RandomGen g => (g, String) -> String
 mutateString (gen, string) = let
     (mutationIndex, g) = generateIndex gen mutationsNumber
     in if string == ""
-        then string
+        then "ϵ"
         else case mutationIndex of
             0 -> mutateString (generateSwapChar (g, string))
             1 -> mutateString (generateSwapFragments (g, string))
