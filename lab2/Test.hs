@@ -10,7 +10,6 @@ convFSMtoStr :: FSM Int -> [[RegExp]] -> [RegExp] -> String
 convFSMtoStr (qs,s,fs,trans,alf) matrix consts = regExpToString $ simp $ solution !! s where
   solution = solve matrix consts
 
--- generate20Strings :: (Eq a, Num a, RandomGen g) => (a, a, a, a, a) -> a -> [a] -> g -> [[String]]
 generate20Strings :: FSM Int -> [[RegExp]] -> Int -> [String]
 generate20Strings (states, start, finals, transitions, alphabet) lts i =
   [mutateString ((mkStdGen (-j)), (generateString (mkStdGen j) lts finals )) 
@@ -19,7 +18,7 @@ generate20Strings (states, start, finals, transitions, alphabet) lts i =
 
 mainTest :: RandomGen g => g -> Int -> ([Bool], String, String, [String])
 mainTest g i =
-  let regex = createRegex g
+  let regex = createRegex (mkStdGen(i))
       (states, start, finals, transitions, alphabet) = makeIntFSM regex
       (lts, consts) = toLTS (states, start, finals, transitions, alphabet) 
       akademReg = convFSMtoStr (states, start, finals, transitions, alphabet) lts consts
@@ -29,8 +28,6 @@ mainTest g i =
                , let resAkademic = checkWordMatchRegex akademReg (words !! j)
                      resOriginal = checkWordMatchRegex regex (words !! j)] 
   in (result, regex, akademReg, words)
-
-
 
 main :: IO ()
 main = do
@@ -43,6 +40,8 @@ main = do
           putStrLn $ "Академическая регулярка " ++ akademReg
           mapM_ printWord (zip [1..] bool)
           where printWord (j, b) = if b
-                                   then putStrLn $ "Слово " ++ show j ++ " " ++ " OK" ++ (words !! (j))
-                                   else putStrLn $ "Слово " ++ show j ++ " "  ++ " FALL" ++ (words !! (j))
+                                   then putStrLn $ "Слово " ++ show j ++ " " ++ "OK " ++ "'" ++ (words !! (j)) ++ "'"
+                                   else putStrLn $ "Слово " ++ show j ++ " "  ++ " FALL" ++ "'" ++  (words !! (j)) ++ "'"
+
+
 
