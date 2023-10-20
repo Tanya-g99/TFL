@@ -159,10 +159,6 @@ flat_cat rs = fc [] rs where
 
 getNorm :: Char -> String -> RegExp
 getNorm a regex = simp $ deriv a $ toRegExp $ toPostfix $ insertDot regex
-
--- regex = "ab#cd"
--- test =     simp $ deriv 'a' $ toRegExp $ toPostfix $ insertDot regex
-
  
 nullable :: RegExp -> Bool
 nullable Zero = False 

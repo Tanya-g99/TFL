@@ -178,13 +178,6 @@ mutateString (gen, string) = let
             5 -> mutateString (generateRemoveFragment (g, string))
             _ -> string
 
--- generate20Strings :: String -> [String]
--- generate20Strings regex = let
---     (states, start, finals, transitions, alphabet) = makeIntFSM regex
---     (lts, _) = toLTS (states, start, finals, transitions, alphabet)
---     in [mutateString ((mkStdGen (-i)), (generateString (mkStdGen i) lts finals )) 
---         | i <- [1..20]]
-
 checkWordMatchRegex :: String -> String -> Bool
 checkWordMatchRegex regex string = let
     match' regex "" = nullable regex

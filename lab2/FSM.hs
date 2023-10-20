@@ -116,11 +116,3 @@ makeIntFSM regex = let
     (finals, statesLen) = finalStates states
     lts = transitions
     in ([0..statesLen], start, finals, lts, alphabet)
-
-
-test :: ([Transition], [String], String)
-test = let
-            (t, s, alphabet) = getAllTransitionsStates "(a|b)*a(a|b)"
-            nS = map (regExpToString) s
-    in (t, nS, alphabet)
-
