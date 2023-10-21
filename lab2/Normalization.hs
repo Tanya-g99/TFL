@@ -8,6 +8,7 @@ data RegExp = Zero | Eps | Let Char |
 -- ∅ ϵ ·
 toRegExp :: String -> RegExp
 toRegExp w = parse w [] where
+  parse :: String -> [RegExp] -> RegExp
   parse [] [r] = r
   parse ('∅':xs) rs = parse xs (Zero:rs)
   parse ('ϵ':xs) rs = parse xs (Eps:rs)
@@ -88,6 +89,7 @@ toPostfix regex = removeStar lastStep
                     || priority token < priority x) 
   
 
+
 cat :: [RegExp] -> RegExp
 cat [] = Eps
 cat [r] = r
@@ -98,12 +100,32 @@ shuf [] = Eps
 shuf [r] = r
 shuf rs = Shuf rs
 
+uni :: [RegExp] -> RegExp
+uni [] = Eps
+uni [r] = r
+uni rs = Union rs
+
 star :: RegExp -> RegExp
 star Zero = Eps
 star Eps = Eps
 star (Star r) = star r
 star r = Star r
+ 
 
+simpStar :: RegExp -> RegExp
+simpStar reg = simp [reg] False where
+  simp :: [RegExp] -> Bool -> RegExp 
+  simp [Cat rs] b = cat[(simp [ri] False) | ri <- rs]
+  simp [Shuf rs] b = shuf[(simp [ri] False) | ri <- rs]
+  simp [Union rs] b = if b == True then uni[(simp [ri] True) | ri <- rs] else uni[(simp [ri] False) | ri <- rs]
+  simp [Star x] b = if b == True then simp [x] True else star(simp [x] True)
+  simp [Let c] b = Let c
+  simp [Eps] b = Eps
+
+union'' :: [RegExp] -> RegExp
+union'' [rs] = rs
+ 
+  
 --regular expression simplifier
 simp :: RegExp -> RegExp
 simp Zero = Zero
@@ -114,6 +136,13 @@ simp (Shuf rs) = union' $ flat_shuf $ map simp rs
 simp (Cat rs) = union' $ flat_cat $ map simp rs
 simp (Star r) = star $ simp r
 
+
+union' :: [RegExp] -> RegExp
+union' rs =  case norm rs of
+  []  ->  Zero
+  [r] -> r
+  rs  -> Union rs
+
 norm :: Ord a => [a] -> [a]
 norm xs = rad $ sort xs where
   rad :: Eq a => [a] -> [a]   
@@ -121,12 +150,6 @@ norm xs = rad $ sort xs where
   rad [x] = [x]
   rad (x:ys@(y:zs)) | x == y = rad ys
                     | otherwise = x : rad ys
-
-union' :: [RegExp] -> RegExp
-union' rs =  case norm rs of
-  []  ->  Zero
-  [r] -> r
-  rs  -> Union rs
 
 
 flat_uni :: [RegExp] -> [RegExp]
@@ -142,7 +165,7 @@ flat_shuf rs = fc [] rs where
   fc pr [] = [shuf $ reverse pr]
   fc pr (Zero:rs) = []
   fc pr (Eps:rs) = fc pr rs
-  fc pr (Shuf rs':rs) = rs' ++ flat_shuf rs
+  fc pr (Shuf rs':rs) = fc (reverse rs' ++ pr) rs
   fc pr (Union rs':rs) = concat $ map (fc pr . (:rs)) rs'
   fc pr (r:rs) = fc (r:pr) rs
  
