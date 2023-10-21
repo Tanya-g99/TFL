@@ -5,9 +5,10 @@ import GenerateString
 import System.Random
 import FSM
 import Normalization
+import Control.Arrow
 
 convFSMtoStr :: FSM Int -> [[RegExp]] -> [RegExp] -> String
-convFSMtoStr (qs,s,fs,trans,alf) matrix consts = regExpToString $ simp $ solution !! s where
+convFSMtoStr (qs,s,fs,trans,alf) matrix consts = regExpToString $ simp $ (solution !! s) where
   solution = solve matrix consts
 
 generate20Strings :: FSM Int -> [[RegExp]] -> Int -> [String]
@@ -29,10 +30,16 @@ mainTest g i =
                      resOriginal = checkWordMatchRegex regex (words !! j)] 
   in (result, regex, akademReg, words)
 
+uniqueRandomInts :: (RandomGen g, Random a) => (a, a) -> Int -> g -> ([a], g)
+uniqueRandomInts range n = 
+            (map fst &&& snd . last) . take n . iterate getNext . randomR range
+            where getNext = randomR range . snd
+
 main :: IO ()
 main = do
   g <- newStdGen
-  let tests = [mainTest g i | i <- [1..10]]
+  let randList = fst $ uniqueRandomInts (0, 10000::Int) 10 g  
+  let tests = [mainTest (mkStdGen(i)) i | i <- randList]
   mapM_ printTest  tests 
   where printTest (bool, regex, akademReg, words)    = do
           putStrLn "Группа Тестов" 
