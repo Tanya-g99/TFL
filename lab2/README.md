@@ -7,4 +7,8 @@
 - [Ольга Александрова](https://github.com/ImKaramel)
 - [Татьяна Гнатенко](https://github.com/Tanya-g99)
 
+## Запуск программы:
 
+``` bash
+sh run.sh
+```
