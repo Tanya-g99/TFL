@@ -30,7 +30,7 @@ generateRegex config
   | randomNumber == 0 =
     let newConf = config { starLevel = starLevel config - 1}
         binary = generateBinary newConf
-        newConf' = newConf { stateException = [4], maxLength = maxLength newConf - 1 }
+        newConf' = newConf { maxLength = maxLength newConf - 1 }
         half1 = generateRegex newConf' {myrand = tail $ myrand newConf' }
         half2 = generateRegex (newConf' { maxLength = maxLength newConf' + 1, myrand =  tail $ reverse $ tail $ myrand newConf'})
     in half1 ++ binary ++ half2
@@ -39,12 +39,12 @@ generateRegex config
         reg = generateRegex newConf
     in "(" ++ reg ++ ")"
   | randomNumber == 2 =
-    let newConf = config { starLevel = starLevel config - 1, stateException = [2, 4], myrand = tail $ myrand config}
+    let newConf = config { starLevel = starLevel config - 1, stateException = [4], myrand = tail $ myrand config}
         reg = generateRegex newConf
         unary = "*"
     in reg ++ unary
   | randomNumber == 3 = generateSymbol config
-  | randomNumber == 4 = ""
+  | randomNumber == 4 = "ϵ"
   | otherwise = error "out of range"
    where
     randomNumber :: Int  
@@ -70,20 +70,13 @@ generateSymbol config = [toEnum (97 + randomNumber )]
  
  
 createRegex :: RandomGen g => g -> String
-createRegex g = generateRegex (RegexConfig alphabetSize starLevel maxLength 0 stateException randArray) where
+createRegex g = generateRegex (RegexConfig alphabetSize starLevel maxLength 0 [] randArray) where
     alphabetSize = 3
     starLevel = 2
     maxLength = 10
-    stateException = [4]
+    -- stateException = [4]
     randArray = fst $ uniqueRandomInts (0, 4::Int) 1000 g where
         uniqueRandomInts :: (RandomGen g, Random a) => (a, a) -> Int -> g -> ([a], g)
         uniqueRandomInts range n = 
             (map fst &&& snd . last) . take n . iterate getNext . randomR range
             where getNext = randomR range . snd
-
-
-
-
-
-
- 
