@@ -54,7 +54,11 @@ generateStateSeq gen adjacency finals = let
         transition = (transitions !! index)
         in if prevState `notElem` finals
             then generateStateSeq' g adjacency (transition:(prevState:res))
-            else (reverse (prevState:res))
+            else if (length transitions) == 0 
+                then (reverse (prevState:res))
+                else case (generateIndex g 2) of
+                    (0, newGen) -> generateStateSeq' newGen adjacency (transition:(prevState:res))
+                    _ -> (reverse (prevState:res))
     in generateStateSeq' gen adjacency [0]
  
 generateChar :: RandomGen g => g -> RegExp -> String
@@ -80,7 +84,9 @@ generateString gen lts finals = let
             | state == end = string
             | state `elem` visited = bfs' end visited queue
             | otherwise = bfs' end (state:visited) (queue++(getNextPositions visited (Path state string)))
-        in bfs' end [] [Path start ""] 
+        in if start == end 
+            then (generateChar gen (lts !! start !! end))
+            else bfs' end [] [Path start ""] 
     makeString :: [Int] -> String
     makeString stateSeq = let
         makeString' [] res = res
