@@ -52,9 +52,9 @@ generateStateSeq gen adjacency finals = let
         transitions = getNextStates (adjacency !! prevState)
         (index, g) = generateIndex gen (length transitions)
         transition = (transitions !! index)
-        in if transition `notElem` finals
+        in if prevState `notElem` finals
             then generateStateSeq' g adjacency (transition:(prevState:res))
-            else (reverse (transition:(prevState:res)))
+            else (reverse (prevState:res))
     in generateStateSeq' gen adjacency [0]
  
 generateChar :: RandomGen g => g -> RegExp -> String

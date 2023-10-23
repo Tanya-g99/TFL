@@ -9,7 +9,7 @@ type Transition = (Int, Int, Char)
 type MaybeTransition = (Maybe Int, Maybe Int, Char)
 
 regexToRegExp :: String -> RegExp
-regexToRegExp regex = simpStar $ toRegExp $ toPostfix $ insertDot regex
+regexToRegExp regex = simp $ simpStar $ toRegExp $ toPostfix $ insertDot regex
 
 getNormDerivative :: Char -> RegExp -> RegExp
 getNormDerivative char regex = simp $ deriv char regex
