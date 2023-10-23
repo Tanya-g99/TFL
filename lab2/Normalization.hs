@@ -202,3 +202,6 @@ deriv a (Union rs) = Union (map (\r -> deriv a r) rs)
 deriv a (Cat rs) = Union (dCat a rs)
 deriv a (Shuf rs) = Union(dShuf a rs)
 deriv a (Star r) = Cat[deriv a r, (Star r)]
+
+t = simpStar $ toRegExp $ toPostfix $ insertDot re
+re = "b#(ab)(a#cb*)*"

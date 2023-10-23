@@ -1,7 +1,10 @@
 module FSMtoReg where
 import FSM
 import Normalization
- 
+
+
+zzip:: [[RegExp]] -> [[RegExp]]
+zzip 
 solve :: [[RegExp]] -> [RegExp] -> [RegExp]
 solve [] [] = []
 solve ((a11:a1J) : rows) (a1':aI') = simp x1 : xI where
@@ -31,10 +34,10 @@ solve ((a11:a1J) : rows) (a1':aI') = simp x1 : xI where
 
 
 toLTS :: FSM Int -> ([[RegExp]], [RegExp])  
-toLTS (qs,s,fs,transition,alphabet) = (lIJ, lI') where
+toLTS (qs,s,fs,transition,alphabet) = (lIJ, lI' ) where
    
   lIJ = [[simp (coef i j) | j <- qs] | i <- qs]
-  coef i j = Union [Let a | a <- alphabet, (lookupMy i j a transition)] where
+  coef i j = Union[Let a | a <- alphabet, (lookupMy i j a transition)] where
     lookupMy :: Int -> Int -> Char -> [Transition] -> Bool
     lookupMy _ _ _ [] = False
     lookupMy f s ch (c:cs) | ((f, s, ch) == c) = True
@@ -43,6 +46,11 @@ toLTS (qs,s,fs,transition,alphabet) = (lIJ, lI') where
   lI' = [ check qi | qi <- qs] where
     check q = if elem q fs then Eps else Zero
 
- 
+r = "(a#b)*bc"
+r2 = "(c)|(ac)#(a|a)"
+tt = toLTS $ makeIntFSM r2
 
-
+conv' :: FSM Int -> String
+conv' m@(qs,s,fs,trans,alf)   =  regExpToString $ simp $ (solution !! s) where
+  (matrix, consts) = toLTS m
+  solution = solve matrix consts
