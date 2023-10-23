@@ -72,11 +72,11 @@ generateChar g regExp =
 generateString :: RandomGen g => g -> [[RegExp]] -> [Int] -> String
 generateString gen lts finals = let
     (adjacency, statesCount, _) = makeAdjacencyMatrix lts
-    stateSeq = generateStateSeq gen adjacency finals
+    (reachability, _, _) = makeReachabilityMatrix (adjacency, statesCount, statesCount)
+    stateSeq = generateStateSeq gen reachability finals
     getNextPositions visited (Path state string) = 
         [(Path nextState (string ++ (generateChar gen (lts !! state !! nextState))))
-        | nextState <- [0..(statesCount-1)], 
-        (nextState `notElem` visited)]
+        | nextState <- [0..(statesCount-1)], (adjacency !! state !! nextState > 0) && (nextState `notElem` visited)]
     bfs :: Int -> Int -> String
     bfs start end = let
         bfs' end visited [] = ""
@@ -84,7 +84,7 @@ generateString gen lts finals = let
             | state == end = string
             | state `elem` visited = bfs' end visited queue
             | otherwise = bfs' end (state:visited) (queue++(getNextPositions visited (Path state string)))
-        in if start == end 
+        in if (start == end) && (adjacency !! start !! end > 0)
             then (generateChar gen (lts !! start !! end))
             else bfs' end [] [Path start ""] 
     makeString :: [Int] -> String
