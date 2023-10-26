@@ -8,8 +8,8 @@ import Normalization
 import Control.Arrow
 
 convFSMtoStr :: FSM Int -> [[RegExp]] -> [RegExp] -> String
-convFSMtoStr (qs,s,fs,trans,alf) matrix consts = regExpToString $ simp $ (solution !! s) where
-  solution = solve matrix consts
+convFSMtoStr (qs,s,fs,trans,alf) matrix consts = regExpToString $ simp $ (union'' solution) where
+  solution = solve (revLL matrix) (revL consts)
 
 generate20Strings :: FSM Int -> [[RegExp]] -> Int -> [String]
 generate20Strings (states, start, finals, transitions, alphabet) lts i =
