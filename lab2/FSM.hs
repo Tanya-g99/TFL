@@ -87,7 +87,7 @@ regExpToString re =
             [Union rs] -> '(' : tail (foldl (++) "" ["|" ++ (parse [ri] "") | ri <- rs]) ++ ")"
             [Shuf rs] -> '(' : tail (foldl (++) "" ["#" ++ (parse [ri] "") | ri <- rs]) ++ ")"
             [Cat rs] -> (foldl (++) "" [(parse [ri] "") | ri <- rs])
-            Star r:rs -> (parse (r:rs) xs) ++ "*"
+            Star r:rs -> '(' : (parse (r:rs) xs) ++ ")" ++ "*"
             Let x:rs -> parse rs (x:xs)
 
 -- По регулярке строит автомат, где состояния представлены в виде RegExp
