@@ -10,6 +10,12 @@ import Data.List
 epsilon :: Char
 epsilon = 'ϵ'
 
+space :: Char
+space = '_'
+
+newline :: Char
+newline = '$'
+
 separator :: String
 separator = "\n"
 
@@ -51,7 +57,7 @@ makeRulesDict ::  [GrammarRule] -> RulesDict
 makeRulesDict rules = Map.fromListWith Set.union $ concatMap (\rule -> [(nterminal rule, Set.singleton rule)]) rules
 
 isNterminalChar :: Char -> Bool
-isNterminalChar c = any ($ c) [isUpper, (=='_'), (=='\'')]
+isNterminalChar c = any ($ c) [isUpper, (=='\'')]
 
 isNterminal :: String -> Bool
 isNterminal "" = False
@@ -88,6 +94,12 @@ parseRuleString string = let
 splitterminalAndNterminal :: String -> [String]
 splitterminalAndNterminal "" = []
 splitterminalAndNterminal string = let
+    makeTerminal :: Char -> String
+    makeTerminal char
+        | char == epsilon = ""
+        | char == space = " "
+        | char == newline = "\n"
+        | otherwise = [char]
     splitterminalAndNterminal' :: String -> String -> [String] -> [String]
     splitterminalAndNterminal' "" nterminal res
         | null nterminal = res
@@ -99,10 +111,7 @@ splitterminalAndNterminal string = let
                 if null nterminal 
                 then res
                 else res ++ [nterminal]
-            newterminal = 
-                if x == epsilon
-                then ""
-                else [x]
+            newterminal = makeTerminal x
             in splitterminalAndNterminal' str "" (newRes ++ [newterminal])
     in splitterminalAndNterminal' string "" []
 
