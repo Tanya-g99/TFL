@@ -16,7 +16,7 @@ data LR0Parser = LR0Parser {
 instance Show LR0Parser where
     show (LR0Parser grammar startSymbol states) = let 
             show_states = ["\nState\n" ++ (show state) | state <- states]
-        in (show grammar) ++ startSymbol ++ (unwords show_states)
+        in (show grammar) ++ "\nСтартовый символ: " ++ startSymbol ++ (unwords show_states)
 
 -- data Table = Table {
 --     action ::

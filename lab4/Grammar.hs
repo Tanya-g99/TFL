@@ -38,8 +38,16 @@ data GrammarRule = GrammarRule {
 } deriving (Eq, Ord)
 
 instance Show GrammarRule where
-    show (GrammarRule dotIndex nterminal product) =
+    show (GrammarRule dotIndex nterminal productions) =
         let 
+            replaceSpaceNewline :: String -> String
+            replaceSpaceNewline term
+                | term == " " = [space]
+                | term == "" = [epsilon]
+                | term == "\n" = [newline]
+                | otherwise = term
+            
+            product = map replaceSpaceNewline productions
             beforeDot = unwords $ take dotIndex $ product
             afterDot = unwords $ drop dotIndex $ product
             showProduct = 
