@@ -1,0 +1,5 @@
+S -> a S b|b S a|a B a|b A b| ϵ
+S -> S S|c
+A -> SaSaS
+B -> SbSbS
+
