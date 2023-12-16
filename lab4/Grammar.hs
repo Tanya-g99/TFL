@@ -22,13 +22,13 @@ separator = "\n"
 alternative :: String
 alternative = "|"
 
-partsSeparater :: String
-partsSeparater = "->"
+partsSeparator :: String
+partsSeparator = "->"
 
 data Grammar = Grammar {
     rules :: [GrammarRule], 
     nterminals :: (Set String),
-    alphabet :: (Set String) 
+    alphabet :: (Set String)
 } deriving (Eq, Ord, Show)
 
 data GrammarRule = GrammarRule {
@@ -95,33 +95,33 @@ trim = dropWhileEnd isSpace . dropWhile isSpace
 
 parseRuleString :: String -> [GrammarRule]
 parseRuleString string = let 
-    [left, right] = (splitOn partsSeparater (trim string))
+    [left, right] = (splitOn partsSeparator (trim string))
     nterminal = trim left
     in map (GrammarRule (-1) nterminal) (map prepareProduct (splitOn alternative right))
 
-splitterminalAndNterminal :: String -> [String]
-splitterminalAndNterminal "" = []
-splitterminalAndNterminal string = let
+splitTerminalAndNterminal :: String -> [String]
+splitTerminalAndNterminal "" = []
+splitTerminalAndNterminal string = let
     makeTerminal :: Char -> String
     makeTerminal char
         | char == epsilon = ""
         | char == space = " "
         | char == newline = "\n"
         | otherwise = [char]
-    splitterminalAndNterminal' :: String -> String -> [String] -> [String]
-    splitterminalAndNterminal' "" nterminal res
+    splitTerminalAndNterminal' :: String -> String -> [String] -> [String]
+    splitTerminalAndNterminal' "" nterminal res
         | null nterminal = res
         | otherwise = res ++ [nterminal]
-    splitterminalAndNterminal' (x:str) nterminal res
-        | isNterminalChar x = splitterminalAndNterminal' str (nterminal ++ [x]) res
+    splitTerminalAndNterminal' (x:str) nterminal res
+        | isNterminalChar x = splitTerminalAndNterminal' str (nterminal ++ [x]) res
         | otherwise = let
             newRes = 
                 if null nterminal 
                 then res
                 else res ++ [nterminal]
             newterminal = makeTerminal x
-            in splitterminalAndNterminal' str "" (newRes ++ [newterminal])
-    in splitterminalAndNterminal' string "" []
+            in splitTerminalAndNterminal' str "" (newRes ++ [newterminal])
+    in splitTerminalAndNterminal' string "" []
 
 prepareProduct :: String -> [String]
-prepareProduct product = concat (map splitterminalAndNterminal ((splitOn " " . trim) product))
+prepareProduct product = concat (map splitTerminalAndNterminal ((splitOn " " . trim) product))
