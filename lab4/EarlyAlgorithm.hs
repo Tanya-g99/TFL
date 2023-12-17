@@ -9,7 +9,6 @@ import qualified Data.Set as Set
 import Data.Map (Map)
 import qualified Data.Map as Map
  
--- EARLY_INIT_NTERM = "___"
 -------------------------
 data Situation = Situation {
      rule :: GrammarRule,
@@ -29,7 +28,7 @@ instance Eq Situation where
 
 instance Show Situation where
     show (Situation rule dotpos initIdx) =
-        "(" ++ nterm rule ++ " -> " ++ beforeDot ++ "." ++ afterDot ++ ", " ++ show initIdx ++ ")"
+        "(" ++ nterminal rule ++ " -> " ++ beforeDot ++ "." ++ afterDot ++ ", " ++ show initIdx ++ ")"
             where
                 beforeDot = unwords $ take dotpos $ product rule
                 afterDot = unwords $ drop dotpos $ product rule
@@ -40,29 +39,21 @@ instance Ord Situation where
 withMovedDot :: Situation -> Situation
 withMovedDot (Situation rule dpos initidx) = Situation rule (dpos + 1) initidx
 
-
--- Helper function to check if a situation is the last situation in a rule
+ 
 isDotLast :: Situation -> Bool
 isDotLast (Situation rule dotPos _) = dotPos == length (product rule)
 
---to check if the next item in a situation is a Non-Terminal
 isNextNterm :: Situation -> Bool
-isNextNterm (Situation rule dotPos initIdx) = not (isDotLast (Situation rule dotPos initIdx)) && isNterm (product rule !! dotPos)
+isNextNterm (Situation rule dotPos initIdx) = not (isDotLast (Situation rule dotPos initIdx)) && isNterminal (product rule !! dotPos)
  
---to get the next item in a situation
 getNextItem :: Situation -> String
 getNextItem (Situation rule dotPos _) = (product rule) !! dotPos
 
 -------------------------
 
-type RulesDict = Map String (Set GrammarRule)
- 
-genRulesDict ::  Grammar -> RulesDict
-genRulesDict grammar = Map.fromListWith Set.union $ concatMap (\rule -> [(nterm rule, Set.singleton rule)]) (rules grammar)
-
 -- function to generate the finite situation
 getFiniteSituation :: Grammar -> Situation
-getFiniteSituation grammar = Situation (GrammarRule "___" [getInitNterm grammar]) 1 0
+getFiniteSituation grammar = Situation GrammarRule {dotIndex = 0, nterminal = "___", product = [getInitNterminal grammar]} 1 0
  
 predict :: EarlyAlgorithm -> Int -> EarlyAlgorithm
 predict alg j = alg { situations = updateSetAtIndex (situations alg) newElem' j}
@@ -99,7 +90,7 @@ complete alg j = alg { situations = updateSetAtIndex (situations alg) newElem' j
         addPrevSituation:: [Situation] -> Situation -> [Situation] -> [Situation]
         addPrevSituation [] _ set = set
         addPrevSituation (prevSit:rs) situation set
-            | isNextNterm prevSit && getNextItem prevSit == nterm (rule situation) = addPrevSituation rs situation ((withMovedDot prevSit) : set)
+            | isNextNterm prevSit && getNextItem prevSit == nterminal (rule situation) = addPrevSituation rs situation ((withMovedDot prevSit) : set)
             | otherwise = addPrevSituation rs situation set
 
 scan :: Int -> String -> EarlyAlgorithm -> EarlyAlgorithm
@@ -142,7 +133,7 @@ earlyAlgorithm gr word =
   let rulesDict = genRulesDict gr
 
       emptySituations = replicate (length word + 1) Set.empty
-      initSituation = Situation (GrammarRule "___" [getInitNterm gr]) 0 0
+      initSituation = Situation GrammarRule {dotIndex = 0, nterminal = "___", product = [getInitNterminal gr]} 0 0
       firstSet = Set.singleton initSituation
       startSituations = updateSetAtIndex emptySituations firstSet 0
 
@@ -154,8 +145,9 @@ earlyAlgorithm gr word =
 
   in finalSit `Set.member` last (situations finalSits)
 
-
+-- g = initGrammar "S -> a S b|b S a|a BaB a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nBaB -> SbSbS" 
+--"S -> a S b|b S a|a B a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nB -> SbSbS"
 -- g = Grammar {rules = [GrammarRule {nterm = "S", product = ["(","S",")"]},GrammarRule {nterm = "S", product = ["S","S"]},GrammarRule {nterm = "S", product = ["a"]},GrammarRule {nterm = "S", product = ["$"]}], nterms = Set.fromList ["S"]}
--- wo = "aaa"
+-- wo = "aacbb"
 -- test = earlyAlgorithm g wo
 --  "S -> (S) | S S\nS -> a | $"
