@@ -1,26 +1,28 @@
 module LR0Parser where
+
 import Grammar
+import Table (Table)
+import qualified Table as Table
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.List
 
-data LR0Parser = LR0Parser {
+data LR0Parser = NotLR0 | LR0Parser {
     grammar :: Grammar,
     startSymbol :: String,
-    states :: [RulesDict]
-    -- table: 
+    states :: [RulesDict],
+    table :: Table
 } deriving (Eq, Ord)
 
 instance Show LR0Parser where
-    show (LR0Parser grammar startSymbol states) = let 
+    show (LR0Parser grammar startSymbol states table) = let 
             show_states = ["\nState\n" ++ (show state) | state <- states]
-        in (show grammar) ++ "\nСтартовый символ: " ++ startSymbol ++ (unwords show_states)
-
--- data Table = Table {
---     action ::
--- }
+        in (show grammar) ++ 
+            "\nСтартовый символ: " ++ startSymbol ++ 
+            (unwords show_states) ++ "\n" ++
+            (show table)
 
 appendDot :: GrammarRule -> GrammarRule
 appendDot (GrammarRule dotIndex nterminal product) = (GrammarRule 0 nterminal product)
@@ -38,7 +40,13 @@ initLR0Parser str = let
             else start
     startSymbol = makeStartSymbol (getInitNterminal grammar) (nterminals grammar)
     states = [closure grammar $ makeRulesDict [GrammarRule 0 startSymbol [getInitNterminal grammar]]]
-    in initializeStates (LR0Parser grammar startSymbol states)
+    in initializeTable (initializeStates (LR0Parser grammar startSymbol states Table.empty))
+
+-- States
+initializeStates :: LR0Parser -> LR0Parser
+initializeStates  (LR0Parser grammar startSymbol states table) = let
+    newStates = makeNewStates grammar states
+    in (LR0Parser grammar startSymbol newStates table)
 
 makeNewStates :: Grammar -> [RulesDict] -> [RulesDict]
 makeNewStates grammar states = let
@@ -60,11 +68,6 @@ makeNewStates grammar states = let
     in if (length states) /= (length newStates)
         then makeNewStates grammar newStates
         else newStates
-
-initializeStates :: LR0Parser -> LR0Parser
-initializeStates  (LR0Parser grammar startSymbol states) = let
-    newStates = makeNewStates grammar states
-    in (LR0Parser grammar startSymbol newStates)
 
 nterminalAfterDot :: [Set GrammarRule] -> [String]
 nterminalAfterDot rules = let
@@ -132,5 +135,10 @@ goto grammar symbol state = let
     newState = makeNewState' itState Map.empty
     in closure grammar newState
 
+-- Table
 initializeTable :: LR0Parser -> LR0Parser
-initializeTable  (LR0Parser grammar startSymbol states) = (LR0Parser grammar startSymbol states)
+initializeTable  (LR0Parser grammar startSymbol states table) = let
+    newTable = Table.make grammar startSymbol states
+    in case newTable of
+        Table.Error -> NotLR0
+        newTable -> (LR0Parser grammar startSymbol states newTable)
