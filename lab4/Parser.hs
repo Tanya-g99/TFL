@@ -173,3 +173,6 @@ follow grammar symbol visited =
  
 g = initGrammar "S -> a S b|b S a|a BaB a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nBaB -> SbSbS"
 test2 = follow g "S" Set.empty
+
+gg = initGrammar "S->sT|s\nT->tT|t"
+testgg = follow gg "T" Set.empty
