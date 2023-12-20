@@ -85,40 +85,6 @@ joinFirstFollow first follow
                     where 
                         lst = Set.toList(first)
 
-addValueToSetInMap :: (Ord k, Ord v) => k -> v -> Map k (Set v) -> Map k (Set v)
-addValueToSetInMap key value ls =
-  Map.insertWith Set.union key (Set.singleton value) ls
- 
- 
-followThird :: Grammar -> Map String (Set String)
-followThird grammar = subsets
-  where
-    start = getInitNterminal grammar
-    nonTerminals = Set.toList(nterminals grammar)
-    productions = rules grammar
-    dict = genRsDict grammar
-    subsets' = Map.fromList [(start, Set.empty)] `Map.union` Map.fromList [(nt, Set.empty) | nt <- Set.toList ( nterminals grammar), nt /= start]
-    subsets = process nonTerminals dict subsets'
-
-    process :: [String] -> Map String (Set GrammarRule) -> Map String (Set String) -> Map String (Set String)
-    process [] _ sub = sub
-    process (n:nterms) dic sub = process nterms dic (go (Set.toList(Map.findWithDefault (Set.empty) n dic)) n sub)
-    
-    go :: [GrammarRule] -> String -> Map String (Set String) -> Map String (Set String)
-    go [] _ sub = sub
-    go (r:rs) nt sub | not (isNterminal (head (takePr r))) = go rs  nt sub
-                     | isStringInSet "ϵ" (Set.toList(makeFirst (takePr r) grammar (Set.empty))) = 
-        go ((GrammarRule {dotIndex = dotIndex r, nterminal = nterminal r, product = (deleteAtIndex (length (product r) - 1) (product r)) } ) : rs ) nt $ match nt r sub
-                     | otherwise = go rs nt $ match nt r sub
-
-    --if match.group(1) != non_terminal:
-    match :: String -> GrammarRule -> Map String (Set String) -> Map String (Set String)
-    match nt r sub | isNterminal (head (takePr r)) && (not (nt == head (takePr r))) = addValueToSetInMap (head (takePr r)) nt sub
-                   | otherwise = sub
-    takePr :: GrammarRule -> [String]
-    takePr r = [(head (reverse (product r)))]
- 
- 
 
 followOneTwo :: Grammar -> String -> Set String
 followOneTwo grammar symbol = follow'
@@ -146,9 +112,43 @@ followOneTwo grammar symbol = follow'
     followOneTwo''' index rule acc  
                     | index /= (length rule - 1) = joinFirstFollow (makeFirst (listFromIndex (index + 1) rule) grammar Set.empty) acc
                     | otherwise = acc
-                    
+
+addValueToSetInMap :: (Ord k, Ord v) => k -> v -> Map k (Set v) -> Map k (Set v)
+addValueToSetInMap key value ls =
+  Map.insertWith Set.union key (Set.singleton value) ls
+ 
+ 
+followThird :: Grammar -> Map String (Set String)
+followThird grammar = subsets
+  where
+    start = getInitNterminal grammar
+    nonTerminals = Set.toList(nterminals grammar)
+    productions = rules grammar
+    dict = genRsDict grammar
+    subsets' = Map.fromList [(start, Set.empty)] `Map.union` Map.fromList [(nt, Set.empty) | nt <- Set.toList ( nterminals grammar), nt /= start]
+    subsets = process nonTerminals dict subsets'
+
+--- обходим словарь по каждому нетерминалу
+    process :: [String] -> Map String (Set GrammarRule) -> Map String (Set String) -> Map String (Set String)
+    process [] _ sub = sub
+    process (n:nterms) dic sub = process nterms dic (go (Set.toList(Map.findWithDefault (Set.empty) n dic)) n sub)
+    
+---получаем правила конкретного нетерминала и проходим по каждому правилу
+    go :: [GrammarRule] -> String -> Map String (Set String) -> Map String (Set String)
+    go [] _ sub = sub
+    go (r:rs) nt sub | not (isNterminal (head (takePr r))) = go rs nt sub
+                     | isStringInSet "ϵ" (Set.toList(makeFirst (takePr r) grammar (Set.empty))) = 
+        go ((GrammarRule {dotIndex = dotIndex r, nterminal = nterminal r, product = (deleteAtIndex (length (product r) - 1) (product r)) } ) : rs ) nt $ match nt r sub
+                     | otherwise = go rs nt $ match nt r sub
+
+    match :: String -> GrammarRule -> Map String (Set String) -> Map String (Set String)
+    match nt r sub | nt /= (head (takePr r)) = addValueToSetInMap nt (head (takePr r)) sub
+                   | otherwise = sub
+    takePr :: GrammarRule -> [String]
+    takePr r = [(head (reverse (product r)))]
+
    
-follow :: Grammar -> String -> Set String -> Set String 
+follow :: Grammar -> String -> Set String -> Set String
 follow grammar symbol visited = 
   let 
     newVisited = Set.insert symbol visited
@@ -156,6 +156,7 @@ follow grammar symbol visited =
     follow''' = followThird grammar
     nterms = Set.toList(nterminals grammar)
     follow' = checkThirdRule nterms follow''' followSet
+ 
 
     checkThirdRule :: [String] -> Map String (Set String) -> Set String -> Set String
     checkThirdRule [] _ res = res
