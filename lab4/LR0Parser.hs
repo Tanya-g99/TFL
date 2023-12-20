@@ -75,7 +75,32 @@ initializeTable  (LR0Parser grammar startSymbol states table) = let
         newTable -> (LR0Parser grammar startSymbol states newTable)
 
 -- Parse a string
-parse :: LR0Parser -> String -> Bool
-parse (LR0Parser grammar startSymbol states table) string = True
+parseString :: LR0Parser -> String -> Bool
+parseString (NotLR0 err) string = False
+parseString (LR0Parser grammar startSymbol states (Table.Table (Table.Actions actions) (Table.Goto gotoColumn))) string = let
+    productionLength :: [String] -> Int -> Int
+    productionLength [] length = length
+    productionLength (term:production) length =
+        if (null term)
+            then productionLength production length
+            else productionLength production (length+1)
+    mutateStack :: [Int] -> String -> (Map Int (Map String Int)) -> [Int]
+    mutateStack stack nterminal gotoColumn = case (Table.get gotoColumn (head stack) nterminal) of
+        Just state -> (state:stack)
+        Nothing -> stack
+    parse ::  [Int] -> String -> Bool
+    parse (state:stack) (c:string) =
+        case (Table.get actions state [c]) of
+            Nothing -> False
+            Just action -> 
+                case action of
+                    Table.None -> False
+                    Table.Accept -> True
+                    Table.Shift stateIndex -> parse (stateIndex:(state:stack)) string
+                    Table.Reduce rule -> 
+                        parse 
+                            (mutateStack (drop (productionLength (Grammar.product rule) 0) (state:stack)) (nterminal rule) gotoColumn) 
+                            (c:string)
+    in parse [0] (string++"$")
 
 lr0Parser = initLR0Parser "S -> sT|s\nT->tT|t"
