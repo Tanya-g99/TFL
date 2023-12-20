@@ -125,3 +125,9 @@ splitTerminalAndNterminal string = let
 
 prepareProduct :: String -> [String]
 prepareProduct product = concat (map splitTerminalAndNterminal ((splitOn " " . trim) product))
+
+reverseGrammarRule :: GrammarRule -> GrammarRule
+reverseGrammarRule (GrammarRule dotIndex nterminal product) = (GrammarRule dotIndex nterminal (reverse product))
+
+reverseGrammar :: Grammar -> Grammar
+reverseGrammar (Grammar rules nterminals alphabet) = (Grammar (map reverseGrammarRule rules) nterminals alphabet)
