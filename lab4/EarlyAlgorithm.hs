@@ -127,8 +127,7 @@ updateSetAtIndex :: [a] -> a -> Int -> [a]
 updateSetAtIndex list newElem index =
   take index list ++ [newElem] ++ drop (index + 1) list
 
-
-earlyAlgorithm :: Grammar -> String -> Bool
+earlyAlgorithm :: Grammar -> String -> Int
 earlyAlgorithm gr word =
   let rulesDict = genRulesDict gr
 
@@ -140,14 +139,34 @@ earlyAlgorithm gr word =
       algo = EarlyAlgorithm {grammar = gr, rulesDict = rulesDict, situations = startSituations}
       
       finalSits = checkingWord word 0 (length word) algo
-      g = (situations finalSits)
+ 
       finalSit = getFiniteSituation gr
+      check = finalSit `Set.member` last (situations finalSits)
+      index = findErrorIndex finalSits check
+  in  index
 
-  in finalSit `Set.member` last (situations finalSits)
+--   in finalSit `Set.member` last (situations finalSits)
+
+ 
+
+findErrorIndex :: EarlyAlgorithm -> Bool -> Int
+findErrorIndex earlyAlg check = result
+    where 
+    sits = situations earlyAlg
+    result = getIndex sits (-1)
+    getIndex :: [Set Situation] -> Int -> Int
+    getIndex [] num | not check = num - 1
+                    | otherwise = (-1)           --- слово принадлежит грамматике
+
+    getIndex (s:ss) num   | Set.null s = num
+                          | otherwise = getIndex ss (num + 1) 
+
+
 
 -- g = initGrammar "S -> a S b|b S a|a BaB a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nBaB -> SbSbS" 
+g = initGrammar "S -> a A | C \nA -> a b | A A\nC -> c"
 --"S -> a S b|b S a|a B a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nB -> SbSbS"
 -- g = Grammar {rules = [GrammarRule {nterm = "S", product = ["(","S",")"]},GrammarRule {nterm = "S", product = ["S","S"]},GrammarRule {nterm = "S", product = ["a"]},GrammarRule {nterm = "S", product = ["$"]}], nterms = Set.fromList ["S"]}
--- wo = "aacbb"
--- test = earlyAlgorithm g wo
+wo = "aabababb"
+test = earlyAlgorithm g wo
 --  "S -> (S) | S S\nS -> a | $"
