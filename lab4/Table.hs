@@ -77,7 +77,7 @@ make grammar startSymbol states = let
                                     case actions of
                                         Conflict state column -> actions
                                         Actions actions ->
-                                            case (Table.get actions stateIndex terminal) of
+                                            case (Table.get actions stateIndex terminal) :: Maybe TableState of
                                                 Just None -> let
                                                     action = Reduce (GrammarRule (-1) nterminal 
                                                         (if (List.length product) == dotIndex
@@ -86,7 +86,7 @@ make grammar startSymbol states = let
                                                         ))
                                                     in addAction'' (Actions (Table.insert actions stateIndex terminal action)) terminals
                                                 _ -> Conflict (show state) terminal
-                                in addAction' (addAction'' (Actions actions) (Set.toList (follow grammar nterminal Set.empty))) productions  -- follow 
+                                in addAction' (addAction'' (Actions actions) (Set.toList (follow grammar nterminal Set.empty))) productions
                         else let
                             nextTerm = (product !! dotIndex)
                             nextStateIndex = List.elemIndex (goto grammar nextTerm state) states
