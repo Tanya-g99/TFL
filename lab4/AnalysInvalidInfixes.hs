@@ -2,9 +2,8 @@ module AnalysInvalidInfixes where
 
 import LR0Parser
 import Grammar
-
-earlyAlgorithm :: Grammar -> String -> Int
-earlyAlgorithm g s = 5
+import EarlyAlgorithm
+import LR0
 
 calculateErrorPositions :: Int -> Int -> Int -> (Int, Int)
 calculateErrorPositions i j length
