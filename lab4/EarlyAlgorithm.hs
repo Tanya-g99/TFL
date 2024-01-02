@@ -28,10 +28,11 @@ instance Eq Situation where
 
 instance Show Situation where
     show (Situation rule dotpos initIdx) =
-        "(" ++ nterminal rule ++ " -> " ++ beforeDot ++ "." ++ afterDot ++ ", " ++ show initIdx ++ ")"
+        "(" ++ nterminal rule ++ " -> " ++ beforeDot ++ "." ++ afterDot ++ ", " ++ show initIdx ++ ")" ++ "\n"
             where
                 beforeDot = unwords $ take dotpos $ product rule
                 afterDot = unwords $ drop dotpos $ product rule
+
 instance Ord Situation where
     compare (Situation rule1 dotPos1 initIdx1) (Situation rule2 dotPos2 initIdx2) =
         compare (rule1, dotPos1, initIdx1) (rule2, dotPos2, initIdx2)
@@ -127,6 +128,7 @@ updateSetAtIndex :: [a] -> a -> Int -> [a]
 updateSetAtIndex list newElem index =
   take index list ++ [newElem] ++ drop (index + 1) list
 
+
 earlyAlgorithm :: Grammar -> String -> Int
 earlyAlgorithm gr word =
   let rulesDict = genRulesDict gr
@@ -144,10 +146,7 @@ earlyAlgorithm gr word =
       check = finalSit `Set.member` last (situations finalSits)
       index = findErrorIndex finalSits check
   in  index
-
 --   in finalSit `Set.member` last (situations finalSits)
-
- 
 
 findErrorIndex :: EarlyAlgorithm -> Bool -> Int
 findErrorIndex earlyAlg check = result
@@ -163,10 +162,34 @@ findErrorIndex earlyAlg check = result
 
 
 
+earlyAlgorithm2 :: Grammar -> String -> String -> Int
+earlyAlgorithm2 gr start word =
+  let rulesDict = genRulesDict gr
+
+      emptySituations = replicate (length word + 1) Set.empty
+      initSituation = Situation GrammarRule {dotIndex = 0, nterminal = "___", product = [start]} 0 0
+      firstSet = Set.singleton initSituation
+      startSituations = updateSetAtIndex emptySituations firstSet 0
+
+      algo = EarlyAlgorithm {grammar = gr, rulesDict = rulesDict, situations = startSituations}
+      finalSits = checkingWord word 0 (length word) algo
+ 
+      finalSit = Situation GrammarRule {dotIndex = 0, nterminal = "___", product = [start]} 1 0
+      check = finalSit `Set.member` last (situations finalSits)
+      index = checkInfix finalSits check
+  in index
+    -- in situations finalSits
+
+checkInfix :: EarlyAlgorithm -> Bool -> Int
+checkInfix earlyAlg check | check = 1 -- является суффиксом 
+                          | Set.null (last (situations earlyAlg)) = 0  -- не является элементом языка
+                          | otherwise = 2 -- является точным инфиксом
+ 
+
 -- g = initGrammar "S -> a S b|b S a|a BaB a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nBaB -> SbSbS" 
-g = initGrammar "S -> a A | C \nA -> a b | A A\nC -> c"
+g = initGrammar "S -> a A | C \nA -> a b | A A | C\nC -> c"
 --"S -> a S b|b S a|a B a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nB -> SbSbS"
 -- g = Grammar {rules = [GrammarRule {nterm = "S", product = ["(","S",")"]},GrammarRule {nterm = "S", product = ["S","S"]},GrammarRule {nterm = "S", product = ["a"]},GrammarRule {nterm = "S", product = ["$"]}], nterms = Set.fromList ["S"]}
-wo = "aabababb"
-test = earlyAlgorithm g wo
+wo = "ababa"
+test = earlyAlgorithm2 g "A" wo
 --  "S -> (S) | S S\nS -> a | $"
