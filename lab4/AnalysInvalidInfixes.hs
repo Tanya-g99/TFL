@@ -4,35 +4,37 @@ import LR0Parser
 import Grammar
 import EarlyAlgorithm
 import LR0
+
+substringInRange :: Int -> Int -> String -> String
+substringInRange start end str = take (end - start + 1) (drop start str) 
+
+analysInfixes :: Grammar -> [String] -> (Int, Int) -> String -> [Int]
+analysInfixes gr mm (k0, klast) word = analysInfixes' mm [head (substringInRange k0 klast word)] (tail (substringInRange k0 klast word)) k0 [k0]
+     where 
+        analysInfixes' :: [String] -> String -> String -> Int ->  [Int] -> [Int]
+        analysInfixes' mm' subWord (r:rest) k0' errorsAr    | (null (newM mm' subWord)) && ( klast <= (last errorsAr))  || (not (null (newM mm' subWord))) && (null rest) = tail errorsAr
+                                                            | (null rest) &&  (null (newM mm' subWord)) = tail (errorsAr ++ [indexError errorsAr subWord])
+                                                            |  null (newM mm' subWord) = analysInfixes' [startGrammar] [r] rest (indexError errorsAr subWord) (errorsAr ++ [indexError errorsAr subWord])
+                                                            |  otherwise = analysInfixes' (newM mm' subWord) (subWord ++ [r]) rest k0' errorsAr
+   
+        helper ::  [String] -> [String] -> String -> [String]
+        helper [] newM _ = newM
+        helper (start:ss) newM  str    | earlyCheck start str == 0 = helper ss newM str
+                                       | earlyCheck start str == 1 = helper ss (start:newM) str
+                                       | earlyCheck start str == 2 = helper ss (start:newM) str
+
+        earlyCheck :: String -> String -> Int
+        earlyCheck start subWord = earlyAlgorithm2 gr start subWord 
  
-
--- грамматика М (подслово - первоначально - первый символ после первой ошибки) (остаток слова в интервале ошибки *без первого символа) k0 klast (список ошибок - изначально с k0)
-analysInfixes :: Grammar ->  [String] -> String -> String -> Int -> Int -> [Int] -> [Int]
-analysInfixes gr mm subWord (r:rest) k0 klast errorsAr | checkError && checkEnd  || (not checkError) && checkEndOfWord = errorsAr
-                                                       | checkEndOfWord && checkError = (errorsAr ++ [k0'])
-                                                       | checkError = analysInfixes gr [startGrammar] (subWord ++ [r]) rest k0' klast (errorsAr ++ [k0'])
-                                                       | otherwise = analysInfixes gr newM' (subWord ++ [r]) rest k0 klast errorsAr
-    where 
-        helper ::  [String] -> [String] -> [String]
-        helper (start:ss) newM         | earlyCheck start == 0 = helper ss newM
-                                       | earlyCheck start == 1 = helper ss (start:newM)
-                                       | earlyCheck start == 2 = helper ss (start:newM)
-        earlyCheck :: String -> Int
-        earlyCheck start = earlyAlgorithm2 gr start subWord 
-
-        newM' = helper mm []
-
-        checkError :: Bool
-        checkError = null newM'
+        newM :: [String] -> String -> [String]
+        newM m str = helper m [] str
 
         startGrammar = getInitNterminal gr
-        checkEnd :: Bool
-        checkEnd = ( klast <= (last errorsAr))
 
-        checkEndOfWord = null rest
-        k0' = (head errorsAr) + (length subWord)
-
-                     
+        indexError :: [Int] -> String -> Int
+        indexError errorsAr subWord = (head errorsAr) + (length subWord)
+ 
+              
 
 calculateErrorPositions :: Int -> Int -> Int -> (Int, Int)
 calculateErrorPositions i j length
