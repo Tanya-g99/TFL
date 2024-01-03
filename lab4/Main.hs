@@ -25,7 +25,6 @@ main = do
   hClose handle
 
   let oneWord = reverse $ tail $ reverse $ concatenateStrings word
-  print "Array of Errors"
 
   let result = parse grammarString oneWord
   print result
