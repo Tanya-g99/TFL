@@ -5,41 +5,48 @@ import Grammar
 import EarlyAlgorithm
 import LR0
 
+import Data.List (nub)
+
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates = nub
+
 substringInRange :: Int -> Int -> String -> String
 substringInRange start end str = take (end - start + 1) (drop start str) 
 
-analysInfixes :: Grammar -> [String] -> (Int, Int) -> String -> [Int]
-analysInfixes gr mm (k0, klast) word = analysInfixes' mm [head (substringInRange k0 klast word)] (tail (substringInRange k0 klast word)) k0 [k0]
-     where 
-        analysInfixes' :: [String] -> String -> String -> Int ->  [Int] -> [Int]
-        analysInfixes' mm' subWord (r:rest) k0' errorsAr    | (null (newM mm' subWord)) && ( klast <= (last errorsAr))  || (not (null (newM mm' subWord))) && (null rest) = tail errorsAr
-                                                            | (null rest) &&  (null (newM mm' subWord)) = tail (errorsAr ++ [indexError errorsAr subWord])
-                                                            |  null (newM mm' subWord) = analysInfixes' [startGrammar] [r] rest (indexError errorsAr subWord) (errorsAr ++ [indexError errorsAr subWord])
-                                                            |  otherwise = analysInfixes' (newM mm' subWord) (subWord ++ [r]) rest k0' errorsAr
-   
-        helper ::  [String] -> [String] -> String -> [String]
-        helper [] newM _ = newM
-        helper (start:ss) newM  str    | earlyCheck start str == 0 = helper ss newM str
-                                       | earlyCheck start str == 1 = helper ss (start:newM) str
-                                       | earlyCheck start str == 2 = helper ss (start:newM) str
 
-        earlyCheck :: String -> String -> Int
-        earlyCheck start subWord = earlyAlgorithm2 gr start subWord 
+analysInfixes :: Grammar -> [String] -> (Int, Int) -> String -> [Int]
+analysInfixes gr mm (k0, klast) word | (klast - k0) < 2 = removeDuplicates $ k0 : [klast]
+                                     | otherwise = analysInfixes' gr klast mm [head (substringInRange (k0 + 1) (klast - 1) word)] (tail (substringInRange (k0 + 1) (klast - 1) word)) k0 [k0] (k0 + 1)
+
+analysInfixes' :: Grammar -> Int ->  [String] -> String -> String -> Int ->  [Int] -> Int -> [Int]
+analysInfixes' gr klast mm' subWord rest k0' errorsAr index      |   (klast <= (last errorsAr))  || (not (null newM)) && (length rest == 0) =   removeDuplicates $ errorsAr ++ [klast]
+                                                                 |   (length rest == 0) &&  (null newM ) =  removeDuplicates $ (errorsAr ++ [indexError]) ++ [klast]
+                                                                 |   null newM  = analysInfixes' gr klast [startGrammar] [head rest] (tail rest) indexError  (errorsAr ++ [indexError]) (index + 1)
+                                                                 |   otherwise = analysInfixes' gr klast newM (subWord ++ [head rest]) (tail rest) k0' errorsAr (index + 1)
+    where
+   
+        helper ::  [String] -> [String]  -> [String]
+        helper [] newM' = newM'
+        helper (start:ss) newM'        | earlyCheck start == 0 = helper ss newM' 
+                                       | earlyCheck start == 1 = helper ss (start:newM')  
+                                       | earlyCheck start == 2 = helper ss (start:newM')
+
+        earlyCheck :: String -> Int
+        earlyCheck start = earlyAlgorithm2 gr start subWord 
  
-        newM :: [String] -> String -> [String]
-        newM m str = helper m [] str
+        newM = helper mm' []  
 
         startGrammar = getInitNterminal gr
 
-        indexError :: [Int] -> String -> Int
-        indexError errorsAr subWord = (head errorsAr) + (length subWord)
+        indexError :: Int
+        indexError  = (head errorsAr) + index
  
               
 
 calculateErrorPositions :: Int -> Int -> Int -> (Int, Int)
 calculateErrorPositions i j length
     | j > (length - i + 1) = (length - j + 1, length - j + 1)
-    | otherwise = (i, (length - j + 1))
+    | otherwise = (i, (length - j - 1))
 
 parse :: String -> String -> String
 parse strGrammar string = let 
@@ -56,6 +63,13 @@ parse strGrammar string = let
         Yes -> "The string " ++ string ++ " is accepted"
         Not errIndex m -> show (analysInfixes grammar m (errorPositions errIndex) string)
 
+ 
 
 
+ 
+-- gg = parse gr wordd
+-- gr = "S -> abS\nS -> c"
+-- wordd = "adab"
 
+
+ 

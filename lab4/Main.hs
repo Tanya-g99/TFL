@@ -1,11 +1,15 @@
 module Main where
 import System.IO
 import Data.List
+import AnalysInvalidInfixes
  
+unClose ::  [String] -> String
+unClose [rs] = rs
  
 concatenateStrings :: [String] -> String
 concatenateStrings [] = ""  
 concatenateStrings (x:xs) = x ++ concatenateStrings xs  
+
 
 main = do
 
@@ -21,9 +25,13 @@ main = do
   hClose handle
 
   let oneWord = reverse $ tail $ reverse $ concatenateStrings word
- 
-  print oneWord
-  print grammarString
+  print "Array of Errors"
+
+  let result = parse grammarString oneWord
+  print result
+  print "The analysis was completed successfully"
+
+  
 
 getLinesUntilEmpty :: Handle -> IO [String]
 getLinesUntilEmpty h = do

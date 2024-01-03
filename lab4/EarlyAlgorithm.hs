@@ -52,7 +52,6 @@ getNextItem (Situation rule dotPos _) = (product rule) !! dotPos
 
 -------------------------
 
--- function to generate the finite situation
 getFiniteSituation :: Grammar -> Situation
 getFiniteSituation grammar = Situation GrammarRule {dotIndex = 0, nterminal = "___", product = [getInitNterminal grammar]} 1 0
  
@@ -146,7 +145,7 @@ earlyAlgorithm gr word =
       check = finalSit `Set.member` last (situations finalSits)
       index = findErrorIndex finalSits check
   in  index
---   in finalSit `Set.member` last (situations finalSits)
+
 
 findErrorIndex :: EarlyAlgorithm -> Bool -> Int
 findErrorIndex earlyAlg check = result
@@ -178,7 +177,7 @@ earlyAlgorithm2 gr start word =
       check = finalSit `Set.member` last (situations finalSits)
       index = checkInfix finalSits check
   in index
-    -- in situations finalSits
+ 
 
 checkInfix :: EarlyAlgorithm -> Bool -> Int
 checkInfix earlyAlg check | check = 1 -- является суффиксом 
@@ -186,10 +185,4 @@ checkInfix earlyAlg check | check = 1 -- является суффиксом
                           | otherwise = 2 -- является точным инфиксом
  
 
--- g = initGrammar "S -> a S b|b S a|a BaB a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nBaB -> SbSbS" 
-g = initGrammar "S -> a A | C \nA -> a b | A A | C\nC -> c"
---"S -> a S b|b S a|a B a|b A b| ϵ\nS -> S S|c\nA -> SaSaS\nB -> SbSbS"
--- g = Grammar {rules = [GrammarRule {nterm = "S", product = ["(","S",")"]},GrammarRule {nterm = "S", product = ["S","S"]},GrammarRule {nterm = "S", product = ["a"]},GrammarRule {nterm = "S", product = ["$"]}], nterms = Set.fromList ["S"]}
-wo = "ababa"
-test = earlyAlgorithm2 g "A" wo
---  "S -> (S) | S S\nS -> a | $"
+ 
