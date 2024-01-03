@@ -39,7 +39,7 @@ analysInfixes gr mm (k0, klast) word = analysInfixes' mm [head (substringInRange
 calculateErrorPositions :: Int -> Int -> Int -> (Int, Int)
 calculateErrorPositions i j length
     | j > (length - i + 1) = (length - j + 1, length - j + 1)
-    | otherwise = (i, j)
+    | otherwise = (i, (length - j + 1))
 
 parse :: String -> String -> String
 parse strGrammar string = let 
@@ -54,7 +54,7 @@ parse strGrammar string = let
 
     in case (parseString lr0Parser string) of
         Yes -> "The string " ++ string ++ " is accepted"
-        Not errIndex m -> show (errorPositions errIndex)
+        Not errIndex m -> show (analysInfixes grammar m (errorPositions errIndex) string)
 
 
 
