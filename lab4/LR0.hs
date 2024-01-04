@@ -53,12 +53,12 @@ nterminalAfterDot rules = let
 makeNewState :: [GrammarRule] -> [Set GrammarRule] -> RulesDict -> RulesDict
 makeNewState grammarRules rules state = let
     appendDerivations :: RulesDict -> String -> [GrammarRule] -> RulesDict
-    appendDerivations state nterminal [] = state
-    appendDerivations state nterminal (derivation:derivations) = 
-        if Set.member (appendDot derivation) (state Map.! nterminal)
-            then appendDerivations state nterminal derivations
+    appendDerivations newState nterminal [] = newState
+    appendDerivations newState nterminal (derivation:derivations) = 
+        if Set.member (appendDot derivation) (newState Map.! nterminal)
+            then appendDerivations newState nterminal derivations
             else appendDerivations
-                (Map.adjust (Set.insert (appendDot derivation)) nterminal state) 
+                (Map.adjust (Set.insert (appendDot derivation)) nterminal newState) 
                 nterminal derivations
     makeNewState' :: [String] -> RulesDict -> RulesDict
     makeNewState' [] newState = newState
@@ -67,9 +67,9 @@ makeNewState grammarRules rules state = let
             then makeNewState' nterminals newState
             else makeNewState' nterminals 
                 (appendDerivations 
-                (if (Map.notMember nterminal state)
-                    then (Map.insert nterminal Set.empty state)
-                    else state)
+                (if (Map.notMember nterminal newState)
+                    then (Map.insert nterminal Set.empty newState)
+                    else newState)
                 nterminal (filter (\(GrammarRule _ ruleNterminal _) -> ruleNterminal == nterminal) grammarRules))
     in makeNewState' (nterminalAfterDot rules) state
 
