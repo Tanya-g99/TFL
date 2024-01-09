@@ -45,7 +45,7 @@ analysInfixes' gr klast mm' subWord rest k0' errorsAr index      |   (klast <= (
 
 calculateErrorPositions :: Int -> Int -> Int -> (Int, Int)
 calculateErrorPositions i j length
-    | i < (length - j - 1) = (length - j - 1, length - j - 1)
+    | i > (length - j - 1) = (length - j - 1, length - j - 1)
     | otherwise = (i, (length - j - 1))
 
 parse :: String -> String -> String
@@ -63,10 +63,10 @@ parse strGrammar string = let
         Yes -> "The string " ++ string ++ " is accepted"
         Not errIndex m -> let
             (k0, klast) = errorPositions errIndex
-            in " Array of Errors: " ++ 
+            in "Array of Errors: " ++ 
             (show  (if (k0 == klast) 
-                then (analysInfixes grammar m (k0, klast) string)
-                else reverse (analysInfixes grammar m (k0, klast) string)))
+                then reverse (analysInfixes grammar m (k0, klast) string)
+                else (analysInfixes grammar m (k0, klast) string)))
 
  
 

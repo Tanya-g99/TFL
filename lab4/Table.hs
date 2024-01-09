@@ -85,7 +85,14 @@ make grammar startSymbol states = let
                                                             else product
                                                         ))
                                                     in addAction'' (Actions (Table.insert actions stateIndex terminal action)) terminals
-                                                _ -> Conflict (show state) terminal
+                                                Nothing -> let
+                                                    action = Reduce (GrammarRule (-1) nterminal 
+                                                        (if (List.length product) == dotIndex
+                                                            then  product
+                                                            else product
+                                                        ))
+                                                    in addAction'' (Actions (Table.insert actions stateIndex terminal action)) terminals
+                                                _ -> Conflict (show state)  terminal
                                 in addAction' (addAction'' (Actions actions) (Set.toList (follow grammar nterminal Set.empty))) productions
                         else let
                             nextTerm = (product !! dotIndex)
