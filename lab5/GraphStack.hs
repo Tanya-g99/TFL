@@ -31,30 +31,30 @@ initGraphStack grammar = let
             else start
     startSymbol = makeStartSymbol (getInitNterminal grammar) (nterminals grammar)
     rootNode = Node 0 (closure grammar $ makeRulesDict [GrammarRule 0 startSymbol [getInitNterminal grammar]]) Nothing [] Nothing 
-    rootNode' = createChildNodes grammar rootNode (Set.toList (alphabet grammar)) 1
+    rootNode' = createChildNodes Set.empty grammar rootNode ((Set.toList (alphabet grammar) ++ (Set.toList (nterminals grammar)))) 1
     in rootNode' 
 
 
-createChildNodes :: Grammar -> Node -> [String] -> Int -> Node
-createChildNodes _ node [] _ = node
-createChildNodes grammar parentNode (symbol:symbols) nextId =
+createChildNodes :: Set RulesDict -> Grammar -> Node -> [String] -> Int -> Node
+createChildNodes states _ node [] _ = node
+createChildNodes states grammar parentNode (symbol:symbols) nextId =
     let
         newState = goto grammar symbol (state parentNode)
-        childNode = if Map.null newState
+        childNode = if (Map.null newState) || (Set.member newState states)
             then Nothing
             else Just (Node { nodeId = nextId, state = newState, term = Just symbol, children = [], parentId = Just (nodeId parentNode) })
         
-        newNextId = if Map.null newState
+        newNextId = if (Map.null newState) || (Set.member newState states)
             then nextId
             else nextId + 1
 
         updatedChildren = case childNode of
-            Just c -> (children parentNode) ++ [createChildNodes grammar c (Set.toList (alphabet grammar)) newNextId]
+            Just c -> (children parentNode) ++ [createChildNodes (Set.insert newState states) grammar c ((Set.toList (alphabet grammar))++ (Set.toList (nterminals grammar))) newNextId]
             Nothing -> children parentNode
         
         updatedNode = parentNode { children = updatedChildren }
     in
-        createChildNodes grammar updatedNode symbols newNextId
+        createChildNodes (Set.insert newState states) grammar updatedNode symbols newNextId
 
 -- createChildNodes :: Grammar -> Int -> Node -> [String] -> Node
 -- createChildNodes _ _ node [] = node
