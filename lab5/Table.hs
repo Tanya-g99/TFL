@@ -1,6 +1,7 @@
 module Table where
 
 import Parser
+import GraphStack
 import Grammar
 import LR0
 import Data.Set (Set)
@@ -49,7 +50,7 @@ data Table = Error String | Table {
 empty :: Table
 empty = Table (Actions Map.empty) (Goto Map.empty)
 
-make :: Grammar -> String -> [RulesDict] -> Table
+make :: Grammar -> String -> Node -> Table
 make grammar startSymbol states = let
     addAction :: Column -> Int -> [(String, Set GrammarRule)] -> RulesDict -> Column
     addAction actions stateIndex [] state = actions
@@ -126,8 +127,7 @@ make grammar startSymbol states = let
         makeGoto' gotoColumn (nterminal:nterminals) = let
             gotoResult = goto grammar nterminal state 
             nextStateIndex = List.elemIndex gotoResult states
-            gotoState = case nextStateIndex of
-                Just index -> index
+            gotoState = depthTraversal state 
             in case gotoColumn of
                 Conflict state column -> gotoColumn
                 Goto gotoMap -> 

@@ -1,6 +1,5 @@
 module GraphStack where
 import Grammar
-import LR0Parser
 import LR0 
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -30,14 +29,8 @@ depthTraversal node currentId = do
         depthTraversal child newId) (children node)
     return $ node { nodeId = currentId, children = updatedChildren }
 
-initGraphStack :: Grammar -> Node
-initGraphStack grammar = let
-    makeStartSymbol :: String -> (Set String) -> String
-    makeStartSymbol start nterminals = 
-        if Set.member start nterminals 
-            then makeStartSymbol (start ++ "'") nterminals
-            else start
-    startSymbol = makeStartSymbol (getInitNterminal grammar) (nterminals grammar)
+initGraphStack :: Grammar -> String -> Node
+initGraphStack grammar startSymbol = let
     rootNode = Node 0 (closure grammar $ makeRulesDict [GrammarRule 0 startSymbol [getInitNterminal grammar]]) Nothing [] Nothing 
     rootNode' = createChildNodes Set.empty grammar rootNode ((Set.toList (alphabet grammar) ++ (Set.toList (nterminals grammar)))) 1
     (rootNode'', _) = runState (depthTraversal rootNode' 1) 2
@@ -73,7 +66,7 @@ createChildNodes states grammar parentNode (symbol:symbols) nextId =
 -- getLR0parser grammar = initLR0Parser $ initGrammar grammar
 
 gr = initGrammar "S -> abS\nS -> c"
-test = initGraphStack gr
+-- test = initGraphStack gr
 
 
 -- :set -package mtl
