@@ -6,8 +6,10 @@ import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Prelude  hiding (product)
-import Control.Monad.State
- 
+import Control.Monad.State 
+import Data.List (find)
+import Data.Maybe (fromJust, isJust)
+
 data Node = Node {
     nodeId :: Int,
     stateRule ::  RulesDict,
@@ -17,8 +19,8 @@ data Node = Node {
 } deriving (Eq)
 
 instance Show Node where
-    show (Node nodeId state term children parentId) =
-        "\n" ++ "Node {nodeId = " ++ show nodeId  ++ "}" ++ ", state = " ++ show state ++ ", term = " ++ show term ++
+    show (Node nodeId stateRule term children parentId) =
+        "\n" ++ "Node {nodeId = "++   show nodeId  ++ "}" ++ ", state = " ++ show stateRule ++ ", term = " ++ show term ++
          ", children = " ++ show children ++ "\n" 
 
 depthTraversal :: Node -> Int -> State Int Node
@@ -59,17 +61,25 @@ createChildNodes states grammar parentNode (symbol:symbols) nextId =
         createChildNodes (Set.insert newState states) grammar updatedNode symbols newNextId
 
  
+getTerm :: Node -> Maybe String
+getTerm node = term node
 
+transition :: Node -> String -> Maybe Node
+transition node term =
+    case find (\child -> isJust (getTerm child) && fromJust (getTerm child) == term) (children node) of
+        Just matchingChild -> Just matchingChild
+        Nothing -> Nothing
  
 
 -- getLR0parser :: String -> LR0Parser
 -- getLR0parser grammar = initLR0Parser $ initGrammar grammar
 
 gr = initGrammar "S -> abS\nS -> c"
--- test = initGraphStack gr
+test = initGraphStack gr "S'"
 
+testChild = transition test "a"
 
--- :set -package mtl
+--ghci :set -package mtl
 
 
 
