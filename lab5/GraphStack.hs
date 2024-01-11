@@ -71,13 +71,16 @@ transition node term =
         Nothing -> Nothing
  
 
+getChildRules :: Node -> [RulesDict]
+getChildRules node = map stateRule (children node)
+
 -- getLR0parser :: String -> LR0Parser
 -- getLR0parser grammar = initLR0Parser $ initGrammar grammar
 
 gr = initGrammar "S -> abS\nS -> c"
 test = initGraphStack gr "S'"
 
-testChild = transition test "a"
+testChild = getChildRules test 
 
 --ghci :set -package mtl
 
