@@ -7,20 +7,28 @@ import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Prelude  hiding (product)
-
-
+import Control.Monad.State
+ 
 data Node = Node {
     nodeId :: Int,
-    state ::  RulesDict,
+    stateRule ::  RulesDict,
     term :: Maybe String,
     children :: [Node],
-    parentId :: Maybe Int
+    parentId :: Maybe Node
 } deriving (Eq)
 
 instance Show Node where
     show (Node nodeId state term children parentId) =
-        "\n" ++ "Node {nodeId = " ++ show nodeId  ++ ", parentId = " ++ show parentId ++ "}" ++ ", state = " ++ show state ++ ", term = " ++ show term ++
-         ", children = " ++ show children 
+        "\n" ++ "Node {nodeId = " ++ show nodeId  ++ "}" ++ ", state = " ++ show state ++ ", term = " ++ show term ++
+         ", children = " ++ show children ++ "\n" 
+
+depthTraversal :: Node -> Int -> State Int Node
+depthTraversal node currentId = do
+    updatedChildren <- mapM (\child -> do
+        newId <- get
+        put (newId + 1)
+        depthTraversal child newId) (children node)
+    return $ node { nodeId = currentId, children = updatedChildren }
 
 initGraphStack :: Grammar -> Node
 initGraphStack grammar = let
@@ -32,17 +40,18 @@ initGraphStack grammar = let
     startSymbol = makeStartSymbol (getInitNterminal grammar) (nterminals grammar)
     rootNode = Node 0 (closure grammar $ makeRulesDict [GrammarRule 0 startSymbol [getInitNterminal grammar]]) Nothing [] Nothing 
     rootNode' = createChildNodes Set.empty grammar rootNode ((Set.toList (alphabet grammar) ++ (Set.toList (nterminals grammar)))) 1
-    in rootNode' 
+    (rootNode'', _) = runState (depthTraversal rootNode' 1) 2
+    in rootNode''
 
 
 createChildNodes :: Set RulesDict -> Grammar -> Node -> [String] -> Int -> Node
 createChildNodes states _ node [] _ = node
 createChildNodes states grammar parentNode (symbol:symbols) nextId =
     let
-        newState = goto grammar symbol (state parentNode)
+        newState = goto grammar symbol (stateRule parentNode)
         childNode = if (Map.null newState) || (Set.member newState states)
             then Nothing
-            else Just (Node { nodeId = nextId, state = newState, term = Just symbol, children = [], parentId = Just (nodeId parentNode) })
+            else Just (Node { nodeId = nextId, stateRule = newState, term = Just symbol, children = [], parentId = Just parentNode })
         
         newNextId = if (Map.null newState) || (Set.member newState states)
             then nextId
@@ -56,20 +65,7 @@ createChildNodes states grammar parentNode (symbol:symbols) nextId =
     in
         createChildNodes (Set.insert newState states) grammar updatedNode symbols newNextId
 
--- createChildNodes :: Grammar -> Int -> Node -> [String] -> Node
--- createChildNodes _ _ node [] = node
--- createChildNodes grammar index parentNode (symbol:symbols) =
---     let
---         newState = goto grammar symbol (state parentNode)
---         childNode = if Map.null newState
---             then Nothing
---             else Just (Node { nodeId = index + 1, state = newState, term = Just symbol, children = [], parentId = Just (nodeId parentNode) })
---         updatedChildren = case childNode of
---             Just c -> children parentNode ++ [c]
---             Nothing -> children parentNode
---         updatedNode = parentNode { children = updatedChildren }
---     in
---         createChildNodes grammar (index + 1) updatedNode symbols
+ 
 
  
 
@@ -80,7 +76,7 @@ gr = initGrammar "S -> abS\nS -> c"
 test = initGraphStack gr
 
 
-
+-- :set -package mtl
 
 
 
