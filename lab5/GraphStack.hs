@@ -7,7 +7,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Prelude  hiding (product)
 import Control.Monad.State 
-import Data.List (find)
+import Data.List (find, nub)
 import Data.Maybe (fromJust, isJust)
 
 data Node = Node {
@@ -18,11 +18,26 @@ data Node = Node {
     parentId :: Maybe Node
 } deriving (Eq)
 
+instance Ord Node where
+  compare node1 node2 = compare (stateRule node1) (stateRule node2)
+
 instance Show Node where
     show (Node nodeId stateRule term children parentId) =
         "\n" ++ "Node {nodeId = "++   show nodeId  ++ "}" ++ ", state = " ++ show stateRule ++ ", term = " ++ show term ++
          ", children = " ++ show children ++ "\n" 
 
+
+ 
+-- depthTraversal :: Node -> Int -> State (Set.Set Node) Node
+-- depthTraversal node currentId = do
+--     visited <- get
+--     if Set.member node visited
+--         then return node
+--         else do
+--             put (Set.insert node visited)
+--             updatedChildren <- mapM (\(child, idx) -> depthTraversal child idx) (zip (children node) [currentId+1..])
+--             return $ node { nodeId = currentId, children = updatedChildren }
+ 
 depthTraversal :: Node -> Int -> State Int Node
 depthTraversal node currentId = do
     updatedChildren <- mapM (\child -> do
@@ -35,7 +50,7 @@ initGraphStack :: Grammar -> String -> Node
 initGraphStack grammar startSymbol = let
     rootNode = Node 0 (closure grammar $ makeRulesDict [GrammarRule 0 startSymbol [getInitNterminal grammar]]) Nothing [] Nothing 
     rootNode' = createChildNodes Set.empty grammar rootNode ((Set.toList (alphabet grammar) ++ (Set.toList (nterminals grammar)))) 1
-    (rootNode'', _) = runState (depthTraversal rootNode' 1) 2
+    (rootNode'', _) = runState (depthTraversal rootNode' 1) 2 
     in rootNode''
 
 
@@ -74,13 +89,24 @@ transition node term =
 getChildRules :: Node -> [RulesDict]
 getChildRules node = map stateRule (children node)
 
+getUniqueChildren :: Node -> [Node]
+getUniqueChildren node =
+    let descendants = getaAllChildren node
+    in nub descendants
+
+getaAllChildren :: Node -> [Node]
+getaAllChildren node = 
+    let childrenList = children node
+        descendantsList = concatMap getaAllChildren childrenList
+    in node : descendantsList
+
 -- getLR0parser :: String -> LR0Parser
 -- getLR0parser grammar = initLR0Parser $ initGrammar grammar
 
 gr = initGrammar "S -> abS\nS -> c"
 test = initGraphStack gr "S'"
 
-testChild = getChildRules test 
+testChild = getUniqueChildren test 
 
 --ghci :set -package mtl
 
