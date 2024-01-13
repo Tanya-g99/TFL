@@ -13,7 +13,7 @@ import Data.Maybe (fromJust, isJust)
 data GraphStack = GraphStack {
     listTopNodes :: [Node],
     stackNodes :: Node
-}
+} deriving (Show)
 
 data Node = Node {
     stateId :: Int,
@@ -42,6 +42,18 @@ instance Ord Node where
 --             where
 --                 updatedStackNode = stackNode { children = (string, newNode) : children stackNode }
 --                 updatedTopNodes = replaceParentNode newNode (Just parent) topNodes 
+
+getParents :: Node -> String -> [Node]
+getParents curNode term = let
+    checkNodes :: [Maybe Node] -> [Node] -> [Node]
+    checkNodes [] nodes = nodes
+    checkNodes (mn:mnodes) nodes = 
+        case mn of
+            Just node -> checkNodes mnodes 
+                (if ((term, curNode) `elem` (children node))
+                    then (node:nodes)
+                    else nodes)
+    in checkNodes (parentNode curNode) []
 
 push :: Node -> String -> GraphStack -> GraphStack
 push newNode string (GraphStack topNodes stackNode) =
