@@ -8,19 +8,22 @@ import qualified Data.Set as Set
 import Prelude  hiding (product)
 import Data.List  
 import Data.Maybe (isNothing)
-import Data.Function (on)
+ 
 
 data GraphStack = GraphStack {
     listTopNodes :: [Node],
     transMatrix :: Map Node [(String, Node)]
 }  
+
 data Node = Node {
     stateId :: Int,
     wordState :: Int
 } deriving (Eq, Ord)
 
+
 instance Show Node where
   show (Node stateId wordState) = "{ " ++ show stateId ++ ",  " ++ show wordState ++ "}" ++ "\n"
+
 
 instance Show GraphStack where
   show (GraphStack topNodes transMatrix) = "GraphStack {listTopNodes = " ++ 
@@ -57,9 +60,6 @@ push newNode string parentNode (GraphStack topNodes transMatrix) =
   in GraphStack updatedTopNodes updatedMatrix'
 
 
-
-
-
 findSingleNode :: Map Node [(String, Node)] -> Set Node
 findSingleNode transMatrix =
   let singleElementNodes = Map.keys $ Map.filter ((== 1) . length) transMatrix
@@ -67,20 +67,15 @@ findSingleNode transMatrix =
 
 
 isValid :: Set Node -> (String, Node) -> Bool
-isValid allKeys (_, node) = False
---Set.member node allKeys
+isValid allKeys (_, node) = Set.member node allKeys
+--
 checkAndRemoveInvalidPairs :: Map Node [(String, Node)] -> Map Node [(String, Node)]
 checkAndRemoveInvalidPairs transMatrix =
   let allKeys = Set.fromList $ Map.keys transMatrix
       updatedPairs = Map.map (Data.List.filter (isValid allKeys)) transMatrix
   in updatedPairs
 
--- checkAndRemoveInvalidPairs :: Map Node [(String, Node)] -> Map Node [(String, Node)]
--- checkAndRemoveInvalidPairs transMatrix =
---   let allKeys = Map.keys transMatrix
---       isValid (_, node) = Set.member node allKeys
---       updatedPairs = Map.map (Data.List.filter isValid) transMatrix
---   in updatedPairs
+
 
 popTop :: Node ->  GraphStack -> GraphStack
 popTop deleteNode (GraphStack topNodes transMatrix) =
@@ -90,12 +85,12 @@ popTop deleteNode (GraphStack topNodes transMatrix) =
 
       resultMatrix = checkAndRemoveInvalidPairs updatedMatrixWithNodesRemoved
       updatedTopNodes =  Data.List.filter (/= deleteNode) topNodes
-  in GraphStack updatedTopNodes updatedMatrixWithNodesRemoved
+  in GraphStack updatedTopNodes resultMatrix
 
 removeKeyInTransMatrix :: Node -> Map Node [(String, Node)] -> Map Node [(String, Node)]
 removeKeyInTransMatrix key transMatrix = Map.delete key transMatrix
  
--- здесь мы по получeнным ключам их удаляем 
+ 
 removeChildrenInMatrix :: Node -> Set Node -> Map Node [(String, Node)] -> Map Node [(String, Node)]
 removeChildrenInMatrix key singleElementNodes transMatrix =
   let keysToRemove = findChildrenToRemove key singleElementNodes transMatrix
@@ -121,7 +116,6 @@ node5 = Node { stateId = 5, wordState = 5 }
 
 --0 -- 2 -- 3 -- 5
 -- 0 -- 4
-
 
 
 test = push node2 "a" initialNode graph
