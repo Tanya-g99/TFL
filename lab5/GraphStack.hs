@@ -1,77 +1,99 @@
 module GraphStack where
 import Grammar
 import LR0 
-import Data.Map (Map)
+import Data.Map  
 import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Prelude  hiding (product)
-import Data.List (find, nub)
-import Data.Maybe (fromJust, isJust, mapMaybe)
--- import Data.Maybe (fromJust, mapMaybe)
+import Data.List  
+import Data.Maybe (isNothing)
+import Data.Function (on)
 
 data GraphStack = GraphStack {
     listTopNodes :: [Node],
-    stackNodes :: Node
+    transMatrix :: Map Node [(String, Node)]
 }  
-
-instance Show GraphStack where
-    show (GraphStack listTopNodes stackNode) =
-        "GraphStack { listTopNodes = " ++ show listTopNodes ++ ", stackNode = " ++ show stackNode ++ " }"
-
 data Node = Node {
     stateId :: Int,
-    wordState :: Int,
-    children :: [(String, Node)],
-    parentNode :: [Maybe Node]
-} deriving (Eq)
+    wordState :: Int
+} deriving (Eq, Ord)
 
 instance Show Node where
-    show (Node stateId wordState children parentNode) =
-        "Node { stateId: " ++ show stateId ++
-        ", wordState: " ++ show wordState ++
-        ", children: " ++ show children ++
-        -- ", parentNode: " ++ show parentNode ++
-        " }"
+  show (Node stateId wordState) = "Node {stateId = " ++ show stateId ++ ", wordState = " ++ show wordState ++ "}"
 
-instance Ord Node where
-  compare node1 node2 = compare (stateId node1, wordState node1) (stateId node2, wordState node2)
+instance Show GraphStack where
+  show (GraphStack topNodes transMatrix) = "GraphStack {listTopNodes = " ++ 
+                                            show topNodes ++ ", transMatrix = " ++ 
+                                            show transMatrix ++ "}"
 
 
-getParents :: Node -> String -> [Node]
-getParents curNode term = let
-    checkNodes :: [Maybe Node] -> [Node] -> [Node]
-    checkNodes [] nodes = nodes
-    checkNodes (mn:mnodes) nodes = 
-        case mn of
-            Just node -> checkNodes mnodes 
-                (if ((term, curNode) `elem` (children node))
-                    then (node:nodes)
-                    else nodes)
-    in checkNodes (parentNode curNode) []
+initGraphStack :: GraphStack
+initGraphStack =
+  let initialNode = Node { stateId = 0, wordState = 0 }
+      initialMatrix = Map.fromList [(initialNode, [])]
+  in GraphStack { listTopNodes = [initialNode], transMatrix = initialMatrix }
 
-push :: Node -> String -> GraphStack -> GraphStack
-push newNode string (GraphStack topNodes stackNode) =
-    case findSameNode newNode stackNode of
-        Just existingNode -> 
-            let updatedStackNode' = addToExistingNode newNode string existingNode stackNode
-                updatedStackNode = findRoot updatedStackNode'  -- Возвращаем стек в корне
-                updatedTopNodes = replaceParentNode newNode (head (parentNode newNode)) topNodes
-            in GraphStack updatedTopNodes updatedStackNode
-        Nothing ->
 
-            let 
-                updatedParentNode = fromJust $ head (parentNode newNode)  -- Получим родительскую ноду
+push :: Node -> String -> Node -> GraphStack -> GraphStack
+push newNode string parentNode (GraphStack topNodes transMatrix) =
+  let updatedMatrix = Map.insertWith (++) parentNode [(string, newNode)] transMatrix
 
-                updatedChildren = (string, newNode) : children updatedParentNode  -- Добавим новую ноду к списку детей узла родителя
+      newNodeExists = isNothing (Map.lookup newNode transMatrix)
+
+      updatedMatrix' = if (newNodeExists) then Map.insert newNode [] updatedMatrix  else updatedMatrix
         
-                updatedParentNode' = updatedParentNode { children = updatedChildren }  -- Обновляем родительскую ноду
+      updatedTopNodes = if any (\n -> stateId n == stateId parentNode) topNodes
+                        then Data.List.map (\n -> if stateId n == stateId parentNode then newNode else n) topNodes
+                        else newNode : topNodes
+  in GraphStack updatedTopNodes updatedMatrix'
 
-                updatedStackNode = findRoot updatedParentNode'   -- Возвращаем стек в корне
-             
-                updatedTopNodes = replaceParentNode newNode (head (parentNode newNode)) topNodes
 
-            in GraphStack updatedTopNodes updatedStackNode
+
+---TEST
+
+graph = initGraphStack
+initialNode = Node { stateId = 0, wordState = 0 }
+secondNode = Node { stateId = 1, wordState = 1 }
+thirdNode = Node { stateId = 2, wordState = 2 }
+test = push secondNode "a" initialNode graph
+test2 = push thirdNode "c" secondNode test
+
+
+
+
+-- getParents :: Node -> String -> [Node]
+-- getParents curNode term = let
+--     checkNodes :: [Maybe Node] -> [Node] -> [Node]
+--     checkNodes [] nodes = nodes
+--     checkNodes (mn:mnodes) nodes = 
+--         case mn of
+--             Just node -> checkNodes mnodes 
+--                 (if ((term, curNode) `elem` (children node))
+--                     then (node:nodes)
+--                     else nodes)
+--     in checkNodes (parentNode curNode) []
+
+-- push :: Node -> String -> GraphStack -> GraphStack
+-- push newNode string (GraphStack topNodes stackNode) =
+--     case findSameNode newNode stackNode of
+--         Just existingNode -> 
+--             let updatedStackNode' = addToExistingNode newNode string existingNode stackNode
+--                 updatedStackNode = findRoot updatedStackNode'  -- Возвращаем стек в корне
+--                 updatedTopNodes = replaceParentNode newNode (head (parentNode newNode)) topNodes
+--             in GraphStack updatedTopNodes updatedStackNode
+--         Nothing ->
+--             let
+--                 parentNode' = fromJust $ head (parentNode newNode)
+--                 updatedParentNode = fromJust (findSameNode parentNode' stackNode)  -- Найдем узел-родитель в стеке
+
+--                 updatedChildren = (string, newNode) : children updatedParentNode  -- Обновляем список детей узла-родителя
+--                 updatedParentNode' = updatedParentNode {children = updatedChildren}
+
+--                 updatedStackNode = findRoot updatedParentNode'  -- Найдем корневой узел для новой ноды
+
+--                 updatedTopNodes = replaceParentNode newNode (Just updatedStackNode) topNodes  -- Обновляем список верхних узлов
+--             in GraphStack updatedTopNodes updatedParentNode'
 
 -- findRoot :: Node -> Node
 -- findRoot curNode
@@ -79,65 +101,73 @@ push newNode string (GraphStack topNodes stackNode) =
 --     | otherwise = case parentNode curNode of
 --                     [] -> curNode  -- Если у узла нет родителей, то текущий узел будет корнем
 --                     parents -> findRoot $ fromJust $ head $ parents
-findRoot :: Node -> Node
-findRoot curNode
-    | stateId curNode == 0 = curNode  -- Если текущий узел - корень, возвращаем его
-    | otherwise = case parentNode curNode of
-                    [] -> curNode  -- Если у узла нет родителей, то текущий узел будет корнем
-                    parents -> case potentialRoots of
-                                    [] -> findRoot (head $ mapMaybe id parents)  -- Если нет потенциальных корневых узлов, продолжаем поиск среди родителей текущего узла
-                                    (root:_) -> findRoot (fromJust root)  -- Иначе выбираем первый найденный потенциальный корневой узел и продолжаем поиск вверх
-                        where potentialRoots = filter (\x -> stateId (fromJust x) == 0) parents
 
-findSameNode :: Node -> Node -> Maybe Node
-findSameNode newNode currentNode =
-    if newNode == currentNode
-        then Just currentNode
-        else case find (\(_, node) -> findSameNode newNode node /= Nothing) (children currentNode) of
-            Just (_, foundNode) -> findSameNode newNode foundNode
-            Nothing -> Nothing
 
-addToExistingNode :: Node -> String -> Node -> Node -> Node
-addToExistingNode newNode string existingNode currentNode =
-    if existingNode == currentNode
-        then existingNode {parentNode = ((parentNode newNode) ++ parentNode existingNode)}
-        else currentNode {children = map (\(key, node) -> if node == existingNode 
-            then (key, addToExistingNode newNode string existingNode node) else (key, node)) (children currentNode)}
+-- -- findRoot :: Node -> Node
+-- -- findRoot curNode
+-- --     | stateId curNode == 0 = curNode  -- Если текущий узел - корень, возвращаем его
+-- --     | otherwise = case parentNode curNode of
+-- --                     [] -> curNode  -- Если у узла нет родителей, то текущий узел будет корнем
+-- --                     parents -> case potentialRoots of
+-- --                                     [] -> findRoot (head $ mapMaybe id parents)  -- Если нет потенциальных корневых узлов, продолжаем поиск среди родителей текущего узла
+-- --                                     (root:_) -> findRoot (fromJust root)  -- Иначе выбираем первый найденный потенциальный корневой узел и продолжаем поиск вверх
+-- --                         where potentialRoots = filter (\x -> stateId (fromJust x) == 0) parents
+
+-- findSameNode :: Node -> Node -> Maybe Node
+-- findSameNode newNode currentNode =
+--     if newNode == currentNode
+--         then Just currentNode
+--         else case find (\(_, node) -> findSameNode newNode node /= Nothing) (children currentNode) of
+--             Just (_, foundNode) -> findSameNode newNode foundNode
+--             Nothing -> Nothing
+
+-- addToExistingNode :: Node -> String -> Node -> Node -> Node
+-- addToExistingNode newNode string existingNode currentNode =
+--     if existingNode == currentNode
+--         then existingNode {parentNode = ((parentNode newNode) ++ parentNode existingNode)}
+--         else currentNode {children = map (\(key, node) -> if node == existingNode 
+--             then (key, addToExistingNode newNode string existingNode node) else (key, node)) (children currentNode)}
  
 
-replaceParentNode :: Node ->  Maybe Node -> [Node] -> [Node]
-replaceParentNode _ _ [] = []
-replaceParentNode newNode maybeParentNode topNodes = 
-    case findNodeIndex parentNode topNodes of
-        Just index -> let (front, _ : rest) = splitAt index topNodes
-                      in front ++ [newNode] ++ rest
-        Nothing -> topNodes ++ [newNode]
-  where parentNode = fromJust maybeParentNode
+-- replaceParentNode :: Node ->  Maybe Node -> [Node] -> [Node]
+-- -- replaceParentNode _ _ [] = []
+-- replaceParentNode newNode maybeParentNode topNodes = 
+--     case findNodeIndex parentNode topNodes of
+--         Just index -> let (front, _ : rest) = splitAt index topNodes
+--                       in front ++ [newNode] ++ rest
+--         Nothing -> topNodes ++ [newNode]
+--   where parentNode = fromJust maybeParentNode
 
 
-initGraphStack :: GraphStack
-initGraphStack = GraphStack [emptyNode] emptyNode
-  where emptyNode = Node 0 0 [] [Nothing]
+-- initGraphStack :: GraphStack
+-- initGraphStack = GraphStack [emptyNode] emptyNode
+--   where emptyNode = Node 0 0 [] [Nothing]
 
 
-findNodeIndex :: Node -> [Node] -> Maybe Int
-findNodeIndex _ [] = Nothing
-findNodeIndex node nodeList = findIndexHelper node nodeList 0
-  where
-    findIndexHelper :: Node -> [Node] -> Int -> Maybe Int
-    findIndexHelper _ [] _ = Nothing
-    findIndexHelper targetNode (x:xs) currentIndex
-      | targetNode == x = Just currentIndex
-      | otherwise = findIndexHelper targetNode xs (currentIndex + 1)
+-- findNodeIndex :: Node -> [Node] -> Maybe Int
+-- findNodeIndex _ [] = Nothing
+-- findNodeIndex node nodeList = findIndexHelper node nodeList 0
+--   where
+--     findIndexHelper :: Node -> [Node] -> Int -> Maybe Int
+--     findIndexHelper _ [] _ = Nothing
+--     findIndexHelper targetNode (x:xs) currentIndex
+--       | targetNode == x = Just currentIndex
+--       | otherwise = findIndexHelper targetNode xs (currentIndex + 1)
 
- 
-node1 = Node 0 0  [("a", node2), ("b", node3)] [Nothing]
-node2 = Node 2 20 [("a", node4)] [Just node1]
-node3 = Node 3 30 [("c", node5)] [Just node1]
-node4 = Node 4 40 [] [Just node2]
-node5 = Node 5 50 [] [Just node3]
+-- graph = GraphStack { listTopNodes = [], stackNodes = node1 }
+-- node1 = Node 0 0  [] [Nothing]
+-- node2 = Node 2 20 [] [Just node1]
+-- node3 = Node 3 30 [] [Just node2]
+-- test2 = push node2 "a" graph 
+-- test3 = push node3 "bab" test2
+-- node1 = Node 0 0  [("a", node2), ("b", node3)] [Nothing]
+-- node2 = Node 2 20 [] [Just node1]
+-- node3 = Node 3 30 [] [Just node1]
+-- node4 = Node 4 40 [] [Just node2]
+-- node5 = Node 5 50 [] [Just node3]
 
-test = findRoot node5
+-- test = findRoot node5
+
 
 
 -- deleteNodeAtIndex :: Int -> [Node] -> [Node]
