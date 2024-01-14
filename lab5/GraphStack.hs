@@ -75,17 +75,17 @@ checkAndRemoveInvalidPairs transMatrix =
       updatedPairs = Map.map (Data.List.filter (isValid allKeys)) transMatrix
   in updatedPairs
 
+popTop :: Node -> GraphStack -> GraphStack
+popTop deleteNode (GraphStack topNodes transMatrix)
+  | deleteNode `notElem` topNodes = (GraphStack topNodes transMatrix)  --исходный GraphStack, если deleteNode отсутствует
+  | otherwise =
+      let singleElementNodes = findSingleNode transMatrix
+          updatedTransMatrix = removeKeyInTransMatrix deleteNode transMatrix
+          updatedMatrixWithNodesRemoved = removeChildrenInMatrix deleteNode singleElementNodes updatedTransMatrix
+          resultMatrix = checkAndRemoveInvalidPairs updatedMatrixWithNodesRemoved
+          updatedTopNodes = Data.List.filter (/= deleteNode) topNodes
+      in GraphStack updatedTopNodes resultMatrix
 
-
-popTop :: Node ->  GraphStack -> GraphStack
-popTop deleteNode (GraphStack topNodes transMatrix) =
-  let singleElementNodes = findSingleNode transMatrix
-      updatedTransMatrix = removeKeyInTransMatrix deleteNode transMatrix
-      updatedMatrixWithNodesRemoved = removeChildrenInMatrix deleteNode singleElementNodes updatedTransMatrix
-
-      resultMatrix = checkAndRemoveInvalidPairs updatedMatrixWithNodesRemoved
-      updatedTopNodes =  Data.List.filter (/= deleteNode) topNodes
-  in GraphStack updatedTopNodes resultMatrix
 
 removeKeyInTransMatrix :: Node -> Map Node [(String, Node)] -> Map Node [(String, Node)]
 removeKeyInTransMatrix key transMatrix = Map.delete key transMatrix
