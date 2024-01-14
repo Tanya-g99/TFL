@@ -20,11 +20,14 @@ data Node = Node {
 } deriving (Eq, Ord)
 
 instance Show Node where
-  show (Node stateId wordState) = "Node {stateId = " ++ show stateId ++ ", wordState = " ++ show wordState ++ "}"
+  show (Node stateId wordState) = "{ " ++ show stateId ++ ",  " ++ show wordState ++ "}" ++ "\n"
 
 instance Show GraphStack where
   show (GraphStack topNodes transMatrix) = "GraphStack {listTopNodes = " ++ 
-                                            show topNodes ++ ", transMatrix = " ++ 
+                                            show topNodes ++
+                                             "\n" ++
+                                            "transMatrix = " ++ 
+                                             "\n" ++
                                             show transMatrix ++ "}"
 
 
@@ -33,6 +36,11 @@ initGraphStack =
   let initialNode = Node { stateId = 0, wordState = 0 }
       initialMatrix = Map.fromList [(initialNode, [])]
   in GraphStack { listTopNodes = [initialNode], transMatrix = initialMatrix }
+
+getParents :: Node -> String -> GraphStack -> [Node]
+getParents child string (GraphStack _ transMatrix) =
+  let matchingNodes = [node | (node, transitions) <- Data.Map.toList transMatrix, (transition, targetNode) <- transitions, transition == string, targetNode == child]
+  in matchingNodes
 
 
 push :: Node -> String -> Node -> GraphStack -> GraphStack
@@ -48,7 +56,21 @@ push newNode string parentNode (GraphStack topNodes transMatrix) =
                         else newNode : topNodes
   in GraphStack updatedTopNodes updatedMatrix'
 
+-- popTop :: Node -> GraphStack -> GraphStack
+-- popTop node (GraphStack topNodes transMatrix) =
+--   let allNodes = Map.keysSet transMatrix
+--       nodesToDelete = findNodesToDelete node allNodes transMatrix
+--       updatedTransMatrix = Data.List.foldr Map.delete transMatrix (Set.toList nodesToDelete)
+--       updatedTopNodes = Data.List.filter (\n -> n /= node) topNodes
+--   in GraphStack updatedTopNodes updatedTransMatrix
 
+-- findNodesToDelete :: Node -> Set Node -> Map Node [(String, Node)] -> Set Node
+-- findNodesToDelete node allNodes transMatrix =
+--   if Map.member node transMatrix && all (\(_, v) -> not (Set.member v allNodes)) (snd <$> (transMatrix Map.! node))
+--   then let parents = Map.keysSet (Map.filter (any (\(_, v) -> v == node)) transMatrix)
+--            toDelete = Set.difference parents allNodes
+--        in Set.unions (toDelete : [findNodesToDelete n allNodes transMatrix | n <- Set.toList toDelete])
+--   else Set.empty
 
 ---TEST
 
@@ -58,6 +80,7 @@ secondNode = Node { stateId = 1, wordState = 1 }
 thirdNode = Node { stateId = 2, wordState = 2 }
 test = push secondNode "a" initialNode graph
 test2 = push thirdNode "c" secondNode test
+test3 = getParents thirdNode "c" test2
 
 
 
