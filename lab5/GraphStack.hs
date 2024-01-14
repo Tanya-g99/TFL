@@ -7,13 +7,17 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Prelude  hiding (product)
 import Data.List (find, nub)
-import Data.Maybe (fromJust, isJust)
-
+import Data.Maybe (fromJust, isJust, mapMaybe)
+-- import Data.Maybe (fromJust, mapMaybe)
 
 data GraphStack = GraphStack {
     listTopNodes :: [Node],
     stackNodes :: Node
-} deriving (Show)
+}  
+
+instance Show GraphStack where
+    show (GraphStack listTopNodes stackNode) =
+        "GraphStack { listTopNodes = " ++ show listTopNodes ++ ", stackNode = " ++ show stackNode ++ " }"
 
 data Node = Node {
     stateId :: Int,
@@ -27,21 +31,12 @@ instance Show Node where
         "Node { stateId: " ++ show stateId ++
         ", wordState: " ++ show wordState ++
         ", children: " ++ show children ++
-        ", parentNode: " ++ show parentNode ++
+        -- ", parentNode: " ++ show parentNode ++
         " }"
 
 instance Ord Node where
   compare node1 node2 = compare (stateId node1, wordState node1) (stateId node2, wordState node2)
 
- 
--- push :: Node -> String -> GraphStack -> GraphStack
--- push newNode string (GraphStack topNodes stackNode) =
---     case parentNode newNode of
---         Nothing -> GraphStack (newNode : topNodes) newNode
---         Just parent -> GraphStack updatedTopNodes updatedStackNode
---             where
---                 updatedStackNode = stackNode { children = (string, newNode) : children stackNode }
---                 updatedTopNodes = replaceParentNode newNode (Just parent) topNodes 
 
 getParents :: Node -> String -> [Node]
 getParents curNode term = let
@@ -59,20 +54,40 @@ push :: Node -> String -> GraphStack -> GraphStack
 push newNode string (GraphStack topNodes stackNode) =
     case findSameNode newNode stackNode of
         Just existingNode -> 
-            let updatedStackNode = addToExistingNode newNode string existingNode stackNode
+            let updatedStackNode' = addToExistingNode newNode string existingNode stackNode
+                updatedStackNode = findRoot updatedStackNode'  -- Возвращаем стек в корне
                 updatedTopNodes = replaceParentNode newNode (head (parentNode newNode)) topNodes
             in GraphStack updatedTopNodes updatedStackNode
         Nothing ->
-            let updatedStackNode = stackNode {children = (string, newNode) : children stackNode}
+
+            let 
+                updatedParentNode = fromJust $ head (parentNode newNode)  -- Получим родительскую ноду
+
+                updatedChildren = (string, newNode) : children updatedParentNode  -- Добавим новую ноду к списку детей узла родителя
+        
+                updatedParentNode' = updatedParentNode { children = updatedChildren }  -- Обновляем родительскую ноду
+
+                updatedStackNode = findRoot updatedParentNode'   -- Возвращаем стек в корне
+             
                 updatedTopNodes = replaceParentNode newNode (head (parentNode newNode)) topNodes
-            in GraphStack (newNode : topNodes) updatedStackNode
 
+            in GraphStack updatedTopNodes updatedStackNode
 
-addToExistingNode :: Node -> String -> Node -> Node -> Node
-addToExistingNode newNode string existingNode currentNode =
-    if existingNode == currentNode
-        then existingNode {parentNode = ((parentNode newNode) ++ parentNode existingNode)}
-        else currentNode {children = map (\(key, node) -> if node == existingNode then (key, addToExistingNode newNode string existingNode node) else (key, node)) (children currentNode)}
+-- findRoot :: Node -> Node
+-- findRoot curNode
+--     | stateId curNode == 0 = curNode  -- Если текущий узел - корень, возвращаем его
+--     | otherwise = case parentNode curNode of
+--                     [] -> curNode  -- Если у узла нет родителей, то текущий узел будет корнем
+--                     parents -> findRoot $ fromJust $ head $ parents
+findRoot :: Node -> Node
+findRoot curNode
+    | stateId curNode == 0 = curNode  -- Если текущий узел - корень, возвращаем его
+    | otherwise = case parentNode curNode of
+                    [] -> curNode  -- Если у узла нет родителей, то текущий узел будет корнем
+                    parents -> case potentialRoots of
+                                    [] -> findRoot (head $ mapMaybe id parents)  -- Если нет потенциальных корневых узлов, продолжаем поиск среди родителей текущего узла
+                                    (root:_) -> findRoot (fromJust root)  -- Иначе выбираем первый найденный потенциальный корневой узел и продолжаем поиск вверх
+                        where potentialRoots = filter (\x -> stateId (fromJust x) == 0) parents
 
 findSameNode :: Node -> Node -> Maybe Node
 findSameNode newNode currentNode =
@@ -81,6 +96,13 @@ findSameNode newNode currentNode =
         else case find (\(_, node) -> findSameNode newNode node /= Nothing) (children currentNode) of
             Just (_, foundNode) -> findSameNode newNode foundNode
             Nothing -> Nothing
+
+addToExistingNode :: Node -> String -> Node -> Node -> Node
+addToExistingNode newNode string existingNode currentNode =
+    if existingNode == currentNode
+        then existingNode {parentNode = ((parentNode newNode) ++ parentNode existingNode)}
+        else currentNode {children = map (\(key, node) -> if node == existingNode 
+            then (key, addToExistingNode newNode string existingNode node) else (key, node)) (children currentNode)}
  
 
 replaceParentNode :: Node ->  Maybe Node -> [Node] -> [Node]
@@ -108,6 +130,15 @@ findNodeIndex node nodeList = findIndexHelper node nodeList 0
       | targetNode == x = Just currentIndex
       | otherwise = findIndexHelper targetNode xs (currentIndex + 1)
 
+ 
+node1 = Node 0 0  [("a", node2), ("b", node3)] [Nothing]
+node2 = Node 2 20 [("a", node4)] [Just node1]
+node3 = Node 3 30 [("c", node5)] [Just node1]
+node4 = Node 4 40 [] [Just node2]
+node5 = Node 5 50 [] [Just node3]
+
+test = findRoot node5
+
 
 -- deleteNodeAtIndex :: Int -> [Node] -> [Node]
 -- deleteNodeAtIndex _ [] = []
@@ -115,12 +146,6 @@ findNodeIndex node nodeList = findIndexHelper node nodeList 0
 --   | index < 0 || index >= length nodeList = nodeList  -- если индекс находится за пределами списка, возвращаем исходный список
 --   | otherwise = front ++ (if null rest then [] else tail rest)
 --     where (front, rest) = splitAt index nodeList
-
-
-
-
-
-
 
 
 -- instance Show Node where
