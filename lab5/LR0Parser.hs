@@ -133,6 +133,10 @@ parseString (LR0Parser grammar startSymbol states (Table.Table (Table.Actions ac
                     [Table.Accept] -> Yes
                     _ -> let
                         newStack = (applyActions action stack)
-                        in parse newStack (nodes ++ (listTopNodes newStack)) string
+                        in if (term == "b") 
+                            then Not index [(show action) ++ "   " ++ (show newStack)]
+                            else parse newStack (nodes ++ (listTopNodes newStack)) string
     in parse (initGraphStack) (listTopNodes (initGraphStack)) (makeMapString(string++"$"))
 
+l = initLR0Parser (initGrammar "S->abc")
+test = parseString l "abc"
