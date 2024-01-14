@@ -95,18 +95,18 @@ parseString (LR0Parser grammar startSymbol states (Table.Table (Table.Actions ac
     parse :: GraphStack -> [Node] -> Map Int String -> ParseResult
     parse stack (node:nodes) string = let
         applyActions :: [Table.Action] -> GraphStack -> GraphStack
-        applyActions [] gs = gs -- удалить из топов стека node => нужен (popTop node gs)
+        applyActions [] gs = popTop node gs -- удалить из топов стека node => нужен (popTop node gs)
         applyActions (action:actions) gs = let
             shift :: Int -> GraphStack
             shift stateId = applyActions actions 
-                    (push (Node stateId (index + 1) [] [Just node]) term gs)
+                    (push (Node stateId (index + 1)) term node gs)
             
             reduce :: String -> [String] -> GraphStack
             reduce nterminal product = let
                 findNewTops :: Node -> [String] -> [Node]
                 findNewTops node [] = [node]
                 findNewTops node (term:product) = let
-                    parents = getParents node term
+                    parents = getParents node term gs
                     newTops :: [Node] -> [Node]
                     newTops [] = []
                     newTops (n:nodes) = (findNewTops n product) ++ newTops nodes
@@ -115,12 +115,12 @@ parseString (LR0Parser grammar startSymbol states (Table.Table (Table.Actions ac
                 addTops (tnode:nodes) gs =
                     case (Table.get gotoColumn (stateId tnode) nterminal) of
                         Just newStateId -> addTops nodes 
-                            (push (Node newStateId index [] [Just tnode]) nterminal gs)
+                            (push (Node newStateId index) nterminal tnode gs)
                         Nothing -> addTops nodes gs
                 in addTops (findNewTops node product) gs
             in case action of
                 Table.Shift stateIdx -> shift stateIdx
-                Table.Reduce (GrammarRule _ nterminal product) -> applyActions actions gs
+                Table.Reduce (GrammarRule _ nterminal product) -> applyActions actions (reduce nterminal product)
 
         state = (stateId node)
         index = (wordState node)
@@ -133,10 +133,10 @@ parseString (LR0Parser grammar startSymbol states (Table.Table (Table.Actions ac
                     [Table.Accept] -> Yes
                     _ -> let
                         newStack = (applyActions action stack)
-                        in if (term == "b") 
-                            then Not index [(show action) ++ "   " ++ (show newStack)]
+                        in if (term == "a") 
+                            then Not index [(show stack) ++ "     push to node " ++ (show node) ++ " node " ++ (show (Node 1 (index + 1))) ++ "      " ++ (show newStack)]
                             else parse newStack (nodes ++ (listTopNodes newStack)) string
     in parse (initGraphStack) (listTopNodes (initGraphStack)) (makeMapString(string++"$"))
 
 l = initLR0Parser (initGrammar "S->abc")
-test = parseString l "abc"
+testl = parseString l "abc"
