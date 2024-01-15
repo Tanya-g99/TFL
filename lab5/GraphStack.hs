@@ -8,7 +8,8 @@ import qualified Data.Set as Set
 import Prelude  hiding (product)
 import Data.List  
 import Data.Maybe (isNothing)
- 
+import Data.Tree
+
 
 data GraphStack = GraphStack {
     listTopNodes :: [Node],
@@ -21,10 +22,29 @@ data Node = Node {
 } deriving (Eq, Ord)
 
 
+-- Function to get all keys
+getAllVertices :: Map Node a -> [Node]
+getAllVertices = Map.keys
+ 
+
+nodeToDOT :: Node -> Map Node [(String, Node)] -> String
+nodeToDOT node transMatrix =
+  let transitions = Map.findWithDefault [] node transMatrix
+      edges = concatMap (\(label, childNode) -> "{ " ++ show node ++ " } -> { " ++ show childNode ++ " } [label=\"" ++ label ++ "\"];\n") transitions
+  in edges
+
+
+-- Функция для преобразования всего графа в формат 
+graphStackToDOT :: GraphStack -> String
+graphStackToDOT (GraphStack _ transMatrix) =
+  let edgesDOT = concatMap (\v -> nodeToDOT v transMatrix) (getAllVertices transMatrix)
+  in "digraph G {\n" ++ concatMap (\v -> "{ " ++ show v ++ " }\n;") (getAllVertices transMatrix) ++ edgesDOT ++ "}\n"
+
+
 instance Show Node where
-  show (Node stateId wordState) = "{ " ++ show stateId ++ ",  " ++ show wordState ++ "}" ++ "\n"
+  show (GraphStack.Node stateId wordState) = "{ " ++ "stateId" ++ show stateId ++ "WordState" ++ show wordState ++ "}"
 
-
+ 
 instance Show GraphStack where
   show (GraphStack topNodes transMatrix) = "GraphStack {listTopNodes = " ++ 
                                             show topNodes ++
@@ -36,7 +56,7 @@ instance Show GraphStack where
 
 initGraphStack :: GraphStack
 initGraphStack =
-  let initialNode = Node { stateId = 0, wordState = 0 }
+  let initialNode = GraphStack.Node { stateId = 0, wordState = 0 }
       initialMatrix = Map.fromList [(initialNode, [])]
   in GraphStack { listTopNodes = [initialNode], transMatrix = initialMatrix }
 
@@ -109,26 +129,28 @@ findChildrenToRemove key singleElementNodes transMatrix =
 
 ---TEST
 
-graph = initGraphStack
-initialNode = Node { stateId = 0, wordState = 0 }
-node4 = Node { stateId = 4, wordState = 4 }
-node2 = Node { stateId = 1, wordState = 1 }
-node3 = Node { stateId = 3, wordState = 3 }
-node5 = Node { stateId = 5, wordState = 5 }
+-- graph = initGraphStack
+-- initialNode = GraphStack.Node { stateId = 0, wordState = 0 }
+-- node4 = GraphStack.Node { stateId = 4, wordState = 4 }
+-- node2 = GraphStack.Node { stateId = 1, wordState = 1 }
+-- node3 = GraphStack.Node { stateId = 3, wordState = 3 }
+-- node5 = GraphStack.Node { stateId = 5, wordState = 5 }
 
---0 -- 2 -- 3 -- 5
--- 0 -- 4
+-- --0 -- 2 -- 3 -- 5
+-- -- 0 -- 4
 
 
-test = push node2 "a" initialNode graph
-test2 = push node3 "c" node2 test
-test22 = push node4 "n" initialNode test2
-test222 = push node5 "f" node3 test22
-test223 = push node5 "f" node4 test222
+-- test = push node2 "a" initialNode graph
+-- test2 = push node3 "c" node2 test
+-- test22 = push node4 "n" initialNode test2
+-- test222 = push node5 "f" node3 test22
+-- test223 = push node5 "f" node4 test222
 
-test3 = getParents node5 "f" test223
-test4 = findSingleNode (transMatrix test2)
-test5 = popTop initialNode test222
+-- test3 = getParents node5 "f" test223
+-- test4 = findSingleNode (transMatrix test2)
+-- test5 = popTop initialNode test222
+
+-- test6 = graphStackToDOT test2
 
 
 
