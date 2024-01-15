@@ -10,14 +10,16 @@ import Data.List (nub)
 removeDuplicates :: Eq a => [a] -> [a]
 removeDuplicates = nub
 
+--Получаем подслово которое внутри интервала 2х ошибок (   )
 substringInRange :: Int -> Int -> String -> String
 substringInRange start end str = take (end - start + 1) (drop start str) 
 
-
+--проверяем, что длина слова будет не нуль
 analysInfixes :: Grammar -> [String] -> (Int, Int) -> String -> [Int]
 analysInfixes gr mm (k0, klast) word | (klast - k0) < 2 = removeDuplicates $ k0 : [klast]
                                      | otherwise = analysInfixes' gr klast mm [head (substringInRange (k0 + 1) (klast - 1) word)] (tail (substringInRange (k0 + 1) (klast - 1) word)) k0 [k0] (k0 + 1)
 
+--Грамматика (последняя ошибка) М (разбираемое подслово) (остаток подслов) (массив ошибок) (текущий индекс в слове)
 analysInfixes' :: Grammar -> Int ->  [String] -> String -> String -> Int ->  [Int] -> Int -> [Int]
 analysInfixes' gr klast mm' subWord rest k0' errorsAr index      |   (klast <= (last errorsAr))  || (not (null newM)) && (length rest == 0) =   removeDuplicates $ errorsAr ++ [klast]
                                                                  |   (length rest == 0) &&  (null newM ) =  removeDuplicates $ (errorsAr ++ [indexError]) ++ [klast]
@@ -27,17 +29,18 @@ analysInfixes' gr klast mm' subWord rest k0' errorsAr index      |   (klast <= (
    
         helper ::  [String] -> [String]  -> [String]
         helper [] newM' = newM'
-        helper (start:ss) newM'        | earlyCheck start == 0 = helper ss newM' 
-                                       | earlyCheck start == 1 = helper ss (start:newM')  
-                                       | earlyCheck start == 2 = helper ss (start:newM')
+        helper (start:ss) newM'        | earlyCheck start == 0 = helper ss newM'  -- не является элементом языка
+                                       | earlyCheck start == 1 = helper ss (start:newM')   -- является суффиксом 
+                                       | earlyCheck start == 2 = helper ss (start:newM')  -- является точным инфиксом
 
         earlyCheck :: String -> Int
         earlyCheck start = earlyAlgorithm2 gr start subWord 
- 
+ --В newM мы ищем Нетерминалы, которые при становлении стартовыми - принимает подслово (то есть это подслово является инфиксом или суффиксом) 
+ -- Очев, если после helper   newM - пусто, следовательно индекс слова - ошибка
         newM = helper mm' []  
-
+--если  newM - пусто, следовательно новое М - содержит только стартовый элемент
         startGrammar = getInitNterminal gr
-
+--в indexError в (head errorsAr) хранится индекс первой ошибки, чтобы найти индекс текущей прибавляем .........
         indexError :: Int
         indexError  = (head errorsAr) + index
  
