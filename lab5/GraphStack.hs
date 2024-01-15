@@ -57,7 +57,9 @@ push newNode string parentNode (GraphStack topNodes transMatrix) =
       updatedTopNodes = if any (\n -> stateId n == stateId parentNode) topNodes
                         then Data.List.map (\n -> if stateId n == stateId parentNode then newNode else n) topNodes
                         else newNode : topNodes
-  in GraphStack updatedTopNodes updatedMatrix'
+      updatedTopNodes' = nub updatedTopNodes
+
+  in GraphStack updatedTopNodes' updatedMatrix'
 
 
 findSingleNode :: Map Node [(String, Node)] -> Set Node
@@ -122,10 +124,11 @@ test = push node2 "a" initialNode graph
 test2 = push node3 "c" node2 test
 test22 = push node4 "n" initialNode test2
 test222 = push node5 "f" node3 test22
+test223 = push node5 "f" node4 test222
 
-test3 = getParents node3 "c" test2
+test3 = getParents node5 "f" test223
 test4 = findSingleNode (transMatrix test2)
-test5 = popTop node5 test222
+test5 = popTop initialNode test222
 
 
 
