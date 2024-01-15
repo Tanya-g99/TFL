@@ -82,45 +82,39 @@ parseString (LR0Parser grammar startSymbol states (Table.Table (Table.Actions ac
         makeMapString' idx [] map = map
         makeMapString' idx (c:string) map = makeMapString' (idx+1) string (Map.insert idx [c] map)
         in makeMapString' 0 string Map.empty
-    productionLength :: [String] -> Int -> Int
-    productionLength [] length = length
-    productionLength (term:production) length =
-        if (null term)
-            then productionLength production length
-            else productionLength production (length+1)
-    mutateStack :: [Int] -> String -> (Map Int (Map String Int)) -> [Int]
-    mutateStack stack nterminal gotoColumn = case (Table.get gotoColumn (head stack) nterminal) of
-        Just state -> (state:stack)
-        Nothing -> stack
+
     parse :: GraphStack -> [Node] -> Map Int String -> ParseResult
     parse stack (node:nodes) string = let
-        applyActions :: [Table.Action] -> GraphStack -> GraphStack
-        applyActions [] gs = popTop node gs -- удалить из топов стека node => нужен (popTop node gs)
-        applyActions (action:actions) gs = let
+        applyActions :: [Table.Action] -> (Bool, GraphStack) -> GraphStack
+        applyActions [] (pop, gs) = if pop
+            then popTop node gs 
+            else gs
+        applyActions (action:actions) (pop, gs) = let
             shift :: Int -> GraphStack
             shift stateId = applyActions actions 
-                    (push (Node stateId (index + 1)) term node gs)
+                    (pop, (push (Node stateId (index + 1)) term node gs))
             
             reduce :: String -> [String] -> GraphStack
             reduce nterminal product = let
                 findNewTops :: Node -> [String] -> [Node]
                 findNewTops node [] = [node]
                 findNewTops node (term:product) = let
-                    parents = getParents node term gs
+                    parents = (getParents node term gs)
                     newTops :: [Node] -> [Node]
                     newTops [] = []
                     newTops (n:nodes) = (findNewTops n product) ++ newTops nodes
                     in newTops parents
-                addTops :: [Node] -> GraphStack -> GraphStack
-                addTops (tnode:nodes) gs =
+                addTops :: [Node] -> (Bool, GraphStack) -> (Bool, GraphStack)
+                addTops [] gs = gs
+                addTops (tnode:nodes) (pop, gs) =
                     case (Table.get gotoColumn (stateId tnode) nterminal) of
                         Just newStateId -> addTops nodes 
-                            (push (Node newStateId index) nterminal tnode gs)
-                        Nothing -> addTops nodes gs
-                in addTops (findNewTops node product) gs
+                            ((Node newStateId index) /= node, (push (Node newStateId index) nterminal tnode gs))
+                        Nothing -> addTops nodes (pop, gs)
+                in applyActions actions (addTops (findNewTops node (reverse product)) (True, gs))
             in case action of
                 Table.Shift stateIdx -> shift stateIdx
-                Table.Reduce (GrammarRule _ nterminal product) -> applyActions actions (reduce nterminal product)
+                Table.Reduce (GrammarRule pop nterminal product) -> (reduce nterminal product)
 
         state = (stateId node)
         index = (wordState node)
@@ -131,11 +125,9 @@ parseString (LR0Parser grammar startSymbol states (Table.Table (Table.Actions ac
                 case action of
                     [Table.None] -> Not index (Map.keys (states !! state))
                     [Table.Accept] -> Yes
-                    _ -> let
-                        newStack = (applyActions action stack)
-                        in if (term == "a") 
-                            then Not index [(show stack) ++ "     push to node " ++ (show node) ++ " node " ++ (show (Node 1 (index + 1))) ++ "      " ++ (show newStack)]
-                            else parse newStack (nodes ++ (listTopNodes newStack)) string
+                    pop -> let
+                        newStack = (applyActions action (True, stack))
+                        in parse newStack (nodes ++ (listTopNodes newStack)) string
     in parse (initGraphStack) (listTopNodes (initGraphStack)) (makeMapString(string++"$"))
 
 l = initLR0Parser (initGrammar "S->abc")
