@@ -1,11 +1,3 @@
 digraph G {
 { { stateId0WordState0} }
-;{ { stateId1WordState2} }
-;{ { stateId1WordState4} }
-;{ { stateId2WordState1} }
-;{ { stateId2WordState3} }
-;{ { stateId0WordState0} } -> { { stateId2WordState1} } [label="a"];
-{ { stateId1WordState2} } -> { { stateId2WordState3} } [label="a"];
-{ { stateId2WordState1} } -> { { stateId1WordState2} } [label="b"];
-{ { stateId2WordState3} } -> { { stateId1WordState4} } [label="b"];
-}
+;}
