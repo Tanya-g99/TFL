@@ -68,7 +68,11 @@ getParents child string (GraphStack _ transMatrix) =
 
 push :: Node -> String -> Node -> GraphStack -> GraphStack
 push newNode string parentNode (GraphStack topNodes transMatrix) =
-  let updatedMatrix = Map.insertWith (++) parentNode [(string, newNode)] transMatrix
+  let 
+      updatedMatrix = 
+        if ((string, newNode) `elem` (transMatrix Map.! parentNode))
+        then transMatrix
+        else Map.insertWith (++) parentNode [(string, newNode)] transMatrix
 
       newNodeExists = isNothing (Map.lookup newNode transMatrix)
 

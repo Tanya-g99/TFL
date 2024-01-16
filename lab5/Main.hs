@@ -28,7 +28,7 @@ main = do
   let oneWord = reverse $ tail $ reverse $ concatenateStrings word
 
 -- Заданная вручную константа N
-  let stepN = 3
+  let stepN = 10
 
   let (gs, result) = parseString (initLR0Parser (initGrammar grammarString)) oneWord stepN
   print result
